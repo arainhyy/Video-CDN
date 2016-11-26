@@ -34,3 +34,5 @@
 
 .idea/*.iml
 .idea/*.xml
+.D*
+CMakeLists.txt
