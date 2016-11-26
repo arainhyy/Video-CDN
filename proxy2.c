@@ -17,6 +17,9 @@ static int proxy_setup_listen();
 // return neg if error (need remove connection from list)
 static int proxy_handle_conn();
 
+static int handler_browser(proxy_conn_t *conn);
+static int handler_server(proxy_conn_t *conn);
+
 int main(int argc , char **argv) {
 	// arguments parsing
 	if (argc == 7) {
@@ -170,7 +173,7 @@ static int proxy_setup_listen() {
 	// create socket ipv4
 	int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
 	if (sock < 0) {
-		perror("procy_setup_listen");
+		perror("procy_setup_listen socket");
 		return -1;
 	}
 	// set sock for incomming connections
@@ -183,12 +186,12 @@ static int proxy_setup_listen() {
     proxy_addr.sin_port = htons(config.listen_port);
     // bind to address
     if (bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr_in)) < 0) {
-		perror("procy_setup_listen");
+		perror("procy_setup_listen bind");
 		return -1;
     }
     // listen to port
     if (listen(sock, PROXY_MAX_LISTEN) < 0) {
-		perror("procy_setup_listen");
+		perror("procy_setup_listen listen");
 		return -1;
     }
     return sock;
@@ -211,6 +214,47 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 	}
 	return 0;
 }
-static int handler_browser(proxy_conn_t *conn);
-static int handler_server(proxy_conn_t *conn);
-static int handler_browser_
+
+static int handler_browser(proxy_conn_t *conn) {
+	int ret = -1;
+	switch (conn->browser.type) {
+	case HTML:
+		// handle html
+		ret = browser_html(conn);
+		break;
+	case F4M:
+		// handle f4m
+		ret = browser_f4m(conn);
+		break;
+	case CHUNK:
+		// handle chunk
+		// modify to adapt to bitrate
+		ret = browser_chunk(conn);
+		break;
+	default:
+		ret = -1;
+	}
+	return ret;
+}
+
+static int handler_server(proxy_conn_t *conn) {
+		int ret = -1;
+	switch (conn->browser.type) {
+	case HTML:
+		// handle html
+		ret = _html(conn);
+		break;
+	case F4M:
+		// handle f4m
+		ret = browser_f4m(conn);
+		break;
+	case CHUNK:
+		// handle chunk
+		// modify to adapt to bitrate
+		ret = browser_chunk(conn);
+		break;
+	default:
+		ret = -1;
+	}
+	return ret;
+}
