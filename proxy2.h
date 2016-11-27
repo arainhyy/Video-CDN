@@ -13,7 +13,7 @@ typedef struct proxy_conn {
 	float T_curr; // current throughput
 	// handout p4: time.h -> time()
 	// .tv_sec, .tv_usec
-	time_t t_s; // t_start, t_f get when chunk fininsh, then update t_s
+	time_t t_s; // t_start, t_f get when chunk finish, then update t_s
 	int bitrate; // parsed from f4m
 	// vqueue, link list part, Q_...
 	// ?? use pointer or static?
@@ -21,6 +21,7 @@ typedef struct proxy_conn {
 	// server_info
 	browser_t browser;
 	server_t server;
+	struct proxy_conn *prev;
 	struct proxy_conn *next;
 } proxy_conn_t;
 
@@ -58,6 +59,11 @@ void proxy_conn_close();
 int proxy_browser();
 int proxy_server();
 int proxy_run();
+
+// helpers, remove and change to static after testing
+void proxy_insert_conn(proxy_conn_t *conn);
+void proxy_remove_conn(proxy_conn_t *conn);
+void proxy_conn_init(proxy_conn_t *conn);
 
 #endif /* !__PROXY_H__ */
 

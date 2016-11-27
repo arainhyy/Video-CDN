@@ -73,6 +73,7 @@ void proxy_init_config(char **argv, int www_ip) {
     if (www_ip == 1) {
         inet_aton(argv[7], &config.www_ip);
     }
+    config.list_conn = NULL;
 }
 
 void proxy_conn_create() {
@@ -285,4 +286,38 @@ static int handler_server(proxy_conn_t *conn) {
 //            ret = -1;
 //    }
     return ret;
+}
+
+void proxy_insert_conn(proxy_conn_t *conn) {
+    if (!conn) {
+        return;
+    }
+    proxy_conn_t *temp = config.list_conn;
+    config.list_conn = conn;
+    conn->next = temp;
+    if (temp) {
+        temp->prev = conn;
+    }
+}
+
+void proxy_remove_conn(proxy_conn_t *conn) {
+    if (!conn) {
+        return;
+    }
+    proxy_conn_t *prev = conn->prev, *next = conn->next;
+    if (prev) {
+        prev->next = next;
+    }
+    if (next) {
+        next->prev = prev;
+    }
+    // check whether head
+    if (!prev) {
+        config.list_conn = next;
+    }
+}
+
+void proxy_conn_init(proxy_conn_t *conn) {
+    conn->prev = NULL;
+    conn->next = NULL;
 }
