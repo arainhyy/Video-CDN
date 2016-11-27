@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "parse.h"
 
 /**
@@ -44,6 +45,10 @@ Request * parse(char *buffer, int size, int socketFd) {
 			state = STATE_START;
 	}
 	Request *request = (Request *) malloc(sizeof(Request));
+	if (!request) {
+		perror("parse");
+		return NULL;
+	}
 	request->header_count = 0;
 	request->is_cgi = 0;
 	request->content_length = 0;

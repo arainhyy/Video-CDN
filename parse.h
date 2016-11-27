@@ -39,14 +39,14 @@ typedef struct
 typedef struct browser {
 	// browser request information
 	int fd;
-	Request header;
+	Request *header;
 	req_uri_t type;
 } browser_t;
 
 typedef struct server {
 	// server response information
 	int fd;
-	Request header;
+	Request *header;
 	resp_uri_t type;
 } server_t;
 
