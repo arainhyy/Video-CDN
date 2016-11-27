@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include <sys/socket.h>
 #include "proxy2.h"
 #include "helper.h"
 
 static FILE *log_fp = NULL;
+static const char *space = " ";
+static const char *crlf = "\r\n";
+
 
 int send_data(int fd, char *buf, int len) {
     int total_sent = 0;
@@ -45,4 +49,25 @@ void log_close() {
     if (fclose(log_fp) < 0) {
         perror("log_close");
     }
+}
+
+void construct_http_req(char *buf, Request *req) {
+    // request line
+    buf[0] = '\0';
+    strcat(buf, req->http_method); strcat(buf, space);
+    strcat(buf, req->http_uri);    strcat(buf, space);
+    strcat(buf, req->http_version);
+//    printf("1 len: %d\n", strlen(buf));
+    strcat(buf, crlf);
+//    printf("2 len: %d\n", strlen(buf));
+    // append list of header
+    struct Request_header *header = req->headers;
+    while (header) {
+        strcat(buf, header->header_name);
+        strcat(buf, ":");
+        strcat(buf, header->header_value);
+        strcat(buf, crlf);
+        header = header->next;
+    }
+    strcat(buf, crlf);
 }

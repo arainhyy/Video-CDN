@@ -255,11 +255,11 @@ static int handler_browser(proxy_conn_t *conn) {
     char buf[MAX_REQ_SIZE] = {0};
     int recvlen = recv(conn->browser.fd, buf, sizeof(buf), MSG_DONTWAIT);
     if (recvlen < 0) {
-        perror("handler_server recv");
+        perror("handler_browser recv");
         return -1;
     }
     // parse request
-    conn->browser.header = parse(buf, recvlen, conn->browser.fd);
+    conn->browser.header = parse(buf, recvlen);
     // check request type
     // TODO: differentiate request and response types
     conn->browser.type = check_type(conn->browser.header);
@@ -286,6 +286,18 @@ static int handler_browser(proxy_conn_t *conn) {
 }
 
 static int handler_server(proxy_conn_t *conn) {
+    // read from socket
+    char buf[MAX_REQ_SIZE] = {0};
+    int recvlen = recv(conn->server.fd, buf, sizeof(buf), MSG_DONTWAIT);
+    if (recvlen < 0) {
+        perror("handler_server recv");
+        return -1;
+    }
+    // parse request
+    conn->server.header = parse(buf, recvlen);
+    // check request type
+    // TODO: differentiate request and response types
+    conn->server.type = check_type(conn->server.header);
     int ret = -1;
 //    switch (conn->browser.type) {
 //        case HTML:

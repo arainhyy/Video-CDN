@@ -50,7 +50,7 @@ typedef struct server {
   resp_uri_t type;
 } server_t;
 
-Request* parse(char *buffer, int size,int socketFd);
+Request* parse(char *buffer, int size);
 
 // parse browser request, get type of request
 int browser_parse_request(browser_t *req);
