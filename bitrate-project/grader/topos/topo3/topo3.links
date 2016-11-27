@@ -1,0 +1,11 @@
+4.2.8.9 router1
+9.26.8.8 router2
+3.4.0.29 router3
+3.1.4.15 router1
+2.7.1.82 router4
+29.97.92.45 router1
+router1 router2
+router1 router4
+router2 router3
+router2 router4
+router3 router4

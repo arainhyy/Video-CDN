@@ -1,0 +1,32 @@
+# This file contains a list of link change events to execute in the simulated
+# network. Columns are as follows:
+#
+# <time> <link> <bandwidth> <latency>
+#
+# time: time (in seconds) after the previous event that this event should run
+# 		Floats are ok. The character '*' indicates the event should wait to
+#		run until the user presses enter.
+#
+# link: The link to modify. This must be one of the bottleneck links specified
+#       in your .bottlenecks file. It must be a string of the format
+#       "link<num>" where <num> is an integer between 1-9999 (inclusive).
+#
+# bandwidth: The BW to set. Should include unit (e.g., 1mbit or 500kbit)
+#
+# latency: The artificial latency to impose on the link. Should include unit
+#		   (e.g., 200ms or 1s)
+#
+
+# Use this event list for generating the plots for your writeup. If you want
+# to make other event scripts for testing purposes, make them in separate files
+# and use the -e flag on netsim.py (run netsim.py -h for more info).
+
+0 link1 1mbit 0ms  # start link BW at 1 mbps
+20 link1 500kbit 0ms  # after 20 seconds, decrease to 500 kbps
+20 link1 250kbit 0ms  # starting at 40 seconds, alternate b/w 250 and 500
+5 link1 500kbit 0ms  # starting at 40 seconds, alternate b/w 250 and 500
+5 link1 250kbit 0ms
+5 link1 500kbit 0ms
+5 link1 250kbit 0ms
+
+# continue with your own test scenarios...
