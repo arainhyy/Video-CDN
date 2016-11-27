@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "parse.h"
 
 /**
@@ -45,12 +44,7 @@ Request * parse(char *buffer, int size, int socketFd) {
 			state = STATE_START;
 	}
 	Request *request = (Request *) malloc(sizeof(Request));
-	if (!request) {
-		perror("parse");
-		return NULL;
-	}
 	request->header_count = 0;
-	request->is_cgi = 0;
 	request->content_length = 0;
 	request->content_readed = 0;
 	request->position = i;
@@ -69,4 +63,65 @@ Request * parse(char *buffer, int size, int socketFd) {
 	}
   	// Handle Malformed Requests
   	return request;
+}
+
+/**
+ * Check type by request struct.
+ *
+ * @param request Parsed request struct.
+ * @return request enum type.
+ */
+int check_type(Request* request) {
+	if (strcasestr(request->http_uri, ".f4m") != NULL) {
+		return REQ_F4M;
+	}
+	if (strcasestr(request->http_uri, ".html") != NULL) {
+		return REQ_HTML;
+	}
+	//TODO(yayunh): temporarily use "-Frag" to check chunk request.
+	if (strcasestr(request->http_uri, "-Frag") != NULL) {
+		return REQ_CHUNK;
+	}
+	return REQ_UK;
+}
+
+/**
+ * Replace a f4m request to nolist f4m request. Called this function to change request after sending
+ * f4m request.
+ *
+ * @param f4m_request
+ * @return IS_F4M or IS_NOT_F4M enum value. IS_F4M means successful replacement.
+ */
+int replace_f4m_to_nolist(char* f4m_request) {
+	char* pt;
+	if ((pt = strstr(f4m_request, ".f4m ")) == NULL) {
+		return IS_NOT_F4M;
+	}
+	int length = strlen(f4m_request) - (pt - f4m_request);
+	memmove(pt + strlen("_nolist.f4m "), pt + strlen(".f4m "), length);
+	memmove(pt, "_nolist.f4m ", strlen("_nolist.f4m "));
+	return IS_F4M;
+}
+
+/**
+ * Replace fragment request with updated bitrate according to throughput.
+ * @param request
+ * @param bitrate
+ * @return IS_FRAGMENT_REQUEST means successful replacement.
+ */
+int replace_uri_bitrate(char* request, int bitrate) {
+	char* pt = NULL;
+	if ((pt = strcasestr(request, " HTTP")) == NULL) {
+		return IS_NOT_FRAGMENT_REQUEST;
+	}
+	char* left = NULL;
+	if ((left = strcasestr(request, "seg")) == NULL) {
+		return IS_NOT_FRAGMENT_REQUEST;
+	}
+	while (*pt != '/') pt--;
+	*pt = '\0';
+	char new_request[MAX_REQ_SIZE];
+	snprintf(new_request, MAX_REQ_SIZE, "%s/%d%s", request, bitrate, left);
+	strcpy(request, new_request);
+	return IS_FRAGMENT_REQUEST;
 }

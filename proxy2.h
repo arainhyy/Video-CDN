@@ -7,20 +7,23 @@
 // #include <arpa/inet.h>
 #include "common.h"
 #include "parse.h"
+#include "bitrate.h"
 
 // connection structure
 typedef struct proxy_conn {
 	float T_curr; // current throughput
 	// handout p4: time.h -> time()
 	// .tv_sec, .tv_usec
-	time_t t_s; // t_start, t_f get when chunk finish, then update t_s
-	int bitrate; // parsed from f4m
+	unsigned long t_s; // t_start, t_f get when chunk finish, then update t_s
+	int bitrate; // smoothed bitrate.
+  	bitrate* bitrate_list; // parsed from f4m
 	// vqueue, link list part, Q_...
 	// ?? use pointer or static?
 	// browser_info
 	// server_info
 	browser_t browser;
 	server_t server;
+  	int transmitted_char_num; // Get updated when receive chunk data from server. Used to estimate throughput.
 	struct proxy_conn *prev;
 	struct proxy_conn *next;
 } proxy_conn_t;

@@ -8,6 +8,7 @@
 
 #define SUCCESS 0
 #define NEEDMORE -1
+
 //Header field
 struct Request_header
 {
@@ -31,24 +32,22 @@ typedef struct
 	int content_readed; // For POST method.
 	int status;
 	int position;
-	int is_cgi;
 	char content_type[50];
 	char query[1024];
 	char* post_body;
 } Request;
-
 typedef struct browser {
-	// browser request information
-	int fd;
-	Request *header;
-	req_uri_t type;
+  // browser request information
+  int fd;
+  Request *header;
+  req_uri_t type;
 } browser_t;
 
 typedef struct server {
-	// server response information
-	int fd;
-	Request *header;
-	resp_uri_t type;
+  // server response information
+  int fd;
+  Request *header;
+  resp_uri_t type;
 } server_t;
 
 Request* parse(char *buffer, int size,int socketFd);
@@ -57,5 +56,9 @@ Request* parse(char *buffer, int size,int socketFd);
 int browser_parse_request(browser_t *req);
 // parse browser request, get type of response
 int server_parse_response(server_t *resp);
+
+int check_type(Request* request);
+int replace_f4m_to_nolist(char* f4m_request);
+int replace_uri_bitrate(char* request, int bitrate);
 
 #endif /* !__PARSE_H__ */

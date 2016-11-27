@@ -4,6 +4,12 @@
 #define MAX_PATH_LEN (512)  // log file path length
 #define MAX_REQ_SIZE (4096) // http request limit
 
+#define IS_F4M (1)
+#define IS_NOT_F4M (0)
+
+#define IS_FRAGMENT_REQUEST (1)
+#define IS_NOT_FRAGMENT_REQUEST (0)
+
 typedef enum req_uri {
 	REQ_HTML,
 	REQ_F4M,

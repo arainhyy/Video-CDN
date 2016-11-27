@@ -120,7 +120,7 @@ int proxy_browser() {
     // also need to update connection's t_s here IF REQUEST IS A CUNK!!
 
     // send modified request to server
-    // send_reuqest(...->server's fd, reuqest buffer)
+    // send_request(...->server's fd, request buffer)
     // cleanup request buffer?
 
 }
@@ -327,4 +327,26 @@ void proxy_remove_conn(proxy_conn_t *conn) {
 void proxy_conn_init(proxy_conn_t *conn) {
     conn->prev = NULL;
     conn->next = NULL;
+}
+
+/**
+ * Estimate smoothed throughput by time and chunk size.
+ *
+ * @param conn
+ * @param chunk_size
+ */
+void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
+    unsigned long t_finish = get_mill_time();
+    // Exchange T to Kbps.
+    unsigned long T = (double)conn->transmitted_char_num * 1000.0 * 8.0 / (t_finish - conn->t_s);
+    unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->bitrate;
+    conn->bitrate = (int) Tcurrent;
+}
+
+/* Get timestamp in milliseconds. */
+unsigned long get_mill_time() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned long mill = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+    return mill;
 }
