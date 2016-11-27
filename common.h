@@ -5,17 +5,17 @@
 #define MAX_REQ_SIZE (4096) // http request limit
 
 typedef enum req_uri {
-	HTML,
-	F4M,
-	CHUNK,
-	UK,
+	REQ_HTML,
+	REQ_F4M,
+	REQ_CHUNK,
+	REQ_UK,
 } req_uri_t;
 
 typedef enum resp_uri {
-	HTML,
-	F4M,
-	CHUNK,
-	UK,
+	RESP_HTML,
+	RESP_F4M,
+	RESP_CHUNK,
+	RESP_UK,
 } resp_uri_t;
 
 #endif /* !__COMMON_H__ */

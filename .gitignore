@@ -36,3 +36,12 @@
 .idea/*.xml
 .D*
 CMakeLists.txt
+
+# yacc generated
+lex.yy.c
+y.tab.c
+y.tab.h
+
+# executable
+proxy
+

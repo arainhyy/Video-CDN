@@ -18,7 +18,7 @@ y.tab.c: parser.y
 	$(CC) $(FLAGS) -c -o $@ $< $(CFLAGS)
 
 proxy: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) -lssl
+	$(CC) -o $@ $^ $(CFLAGS)
 
 clean:
 	rm -f *~ *.o proxy lex.yy.c y.tab.c y.tab.h log

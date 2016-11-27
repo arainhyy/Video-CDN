@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "common.h"
 
 #define SUCCESS 0
 #define NEEDMORE -1
