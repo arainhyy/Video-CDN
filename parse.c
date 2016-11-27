@@ -44,6 +44,10 @@ Request * parse(char *buffer, int size, int socketFd) {
 			state = STATE_START;
 	}
 	Request *request = (Request *) malloc(sizeof(Request));
+	if (!request) {
+		perror("parse malloc");
+		return NULL;
+	}
 	request->header_count = 0;
 	request->content_length = 0;
 	request->content_readed = 0;

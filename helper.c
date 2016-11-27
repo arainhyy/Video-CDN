@@ -46,12 +46,3 @@ void log_close() {
         perror("log_close");
     }
 }
-
-float calculate_throughput(proxy_conn_t *conn) {
-    time_t epoch = time(NULL);
-    int time_diff = int((long) epoch - (long) conn->t_s);
-    if (time_diff == 0) {
-        return -1f;
-    }
-    return ((float)conn->);
-}

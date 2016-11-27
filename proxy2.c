@@ -251,6 +251,19 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 }
 
 static int handler_browser(proxy_conn_t *conn) {
+    // read from socket
+    char buf[MAX_REQ_SIZE] = {0};
+    int recvlen = recv(conn->browser.fd, buf, sizeof(buf), MSG_DONTWAIT);
+    if (recvlen < 0) {
+        perror("handler_server recv");
+        return -1;
+    }
+    // parse request
+    conn->browser.header = parse(buf, recvlen, conn->browser.fd);
+    // check request type
+    // TODO: differentiate request and response types
+    conn->browser.type = check_type(conn->browser.header);
+
     int ret = -1;
     switch (conn->browser.type) {
         case REQ_HTML:
@@ -328,6 +341,8 @@ void proxy_conn_init(proxy_conn_t *conn) {
     conn->prev = NULL;
     conn->next = NULL;
 }
+
+unsigned long get_mill_time();
 
 /**
  * Estimate smoothed throughput by time and chunk size.
