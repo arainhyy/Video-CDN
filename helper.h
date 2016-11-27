@@ -12,9 +12,12 @@ int send_data(int fd, char *buf, int len);
 
 // log record
 void log_record(int time, const char *client_ip,
-	const char *query_name, const char *response_ip);
+                const char *query_name, const char *response_ip);
+
 void log_init(const char *log_name);
+
 void log_close();
-void construct_http_req(char *buf, Request *req);
+
+int construct_http_req(char *buf, Request *req);
 
 #endif /* !__HELPER_H__ */

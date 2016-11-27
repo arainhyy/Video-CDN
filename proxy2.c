@@ -352,6 +352,7 @@ void proxy_remove_conn(proxy_conn_t *conn) {
 void proxy_conn_init(proxy_conn_t *conn) {
     conn->prev = NULL;
     conn->next = NULL;
+    conn->server_accepted = 0;
 }
 
 unsigned long get_mill_time();

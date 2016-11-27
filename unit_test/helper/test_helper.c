@@ -33,9 +33,11 @@ static void test_construct_http_req(void **state) {
     header_2.next = NULL;
     // test construct
     char buf[8192];
-    construct_http_req(buf, &req);
+    int len = construct_http_req(buf, &req);
 //    puts(buf);
     assert_memory_equal(buf, reqstr, strlen(reqstr));
+    assert_int_equal(len, strlen(reqstr));
+//    printf("strlen: %d", len);
 }
 
 int main(void) {

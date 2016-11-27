@@ -51,7 +51,7 @@ void log_close() {
     }
 }
 
-void construct_http_req(char *buf, Request *req) {
+int construct_http_req(char *buf, Request *req) {
     // request line
     buf[0] = '\0';
     strcat(buf, req->http_method); strcat(buf, space);
@@ -70,4 +70,5 @@ void construct_http_req(char *buf, Request *req) {
         header = header->next;
     }
     strcat(buf, crlf);
+    return strlen(buf);
 }
