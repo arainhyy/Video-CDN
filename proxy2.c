@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
@@ -229,6 +230,50 @@ static int proxy_setup_listen() {
         perror("proxy_setup_listen listen");
         return -1;
     }
+    return sock;
+}
+
+static int proxy_connect_server(proxy_conn_t *conn) {
+    // initialize address
+    struct sockaddr_in proxy_addr;
+    memset(&proxy_addr, 0, sizeof(struct sockaddr_in));
+    proxy_addr.sin_family = AF_INET;
+    proxy_addr.sin_addr.s_addr = config.fake_ip.s_addr; // specified in handout
+    proxy_addr.sin_port = htons(0); // ephemeral
+
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(struct sockaddr_in));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    if (config.www_ip.s_addr != -1) {
+        server_addr.sin_addr.s_addr = config.www_ip.s_addr;
+    }
+    // create socket ipv4
+    int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
+    if (sock < 0) {
+        perror("proxy_connect_server socket");
+        return -1;
+    }
+    int ret = bind(sock, (struct sockaddr*) (&proxy_addr), sizeof(struct sockaddr));
+    if (ret < 0) {
+        perror("proxy_connect_server bind");
+        close(sock);
+        return -1;
+    }
+    ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
+    if (ret < 0) {
+        perror("proxy_connect_server connect");
+        close(sock);
+        return -1;
+    }
+    // init server in conn
+    FD_SET(sock, &config.ready);
+    if (sock > config.fd_max) {
+        config.fd_max = sock;
+    }
+    conn->server.fd = sock;
+    conn->server.header = NULL;
+    conn->server.type = -1;
     return sock;
 }
 
