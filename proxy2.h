@@ -54,7 +54,7 @@ bind(s, (struct sockaddr*)myaddr, sizeof(myaddr));
 
 // init one global static congig struct
 void proxy_init_config(char **argv, int www_ip);
-void proxy_conn_create();
+int proxy_conn_create(int sock, proxy_conn_t *conn);
 void proxy_conn_close();
 int proxy_browser();
 int proxy_server();

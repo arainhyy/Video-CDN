@@ -76,20 +76,39 @@ void proxy_init_config(char **argv, int www_ip) {
     config.list_conn = NULL;
 }
 
-void proxy_conn_create() {
+int proxy_conn_create(int sock, proxy_conn_t *conn) {
     // init browser struct
-
+    struct sockaddr_in browser_addr;
+    socklen_t addr_len = sizeof(browser_addr);
     // accept from browser
-
-    // insert to list, set fd...
-
+    int browser_sock = accept(sock, (struct sockaddr_in *) (&browser_addr),
+                              &addr_len);
+    if (browser_sock < 0) {
+        perror("proxy_conn_create");
+        return -1;
+    }
+    // set browser's fd
+    conn->browser.fd = browser_sock;
+    FD_SET(browser_sock, &config.ready);
+    // insert to list
+    proxy_insert_conn(conn);
+    return 0;
 }
 
-void proxy_conn_close() {
+void proxy_conn_close(proxy_conn_t *conn) {
     // close sockets, browser, server
-
+    if (conn->browser.fd != 0) {
+        close(conn->browser.fd);
+        FD_CLR(conn->browser.fd, &config.ready);
+        conn->browser.fd = 0;
+    }
+    if (conn->server.fd != 0) {
+        close(conn->server.fd);
+        FD_CLR(conn->server.fd, &config.ready);
+        conn->server.fd = 0;
+    }
     // remove from conn list
-
+    proxy_remove_conn(conn);
 }
 
 int proxy_browser() {
@@ -148,32 +167,17 @@ int proxy_run() {
         // now ready_num must larger than 0
         // first handle new connection
         if (FD_ISSET(sock, &ready)) {
-            proxy_conn_create();
+            proxy_conn_t *new_conn = malloc(sizeof(proxy_conn_t));
+            if (new_conn) {
+                proxy_conn_create(sock, new_conn);
+            } else {
+                perror("proxy_conn_create malloc");
+            }
             ready_num--;
         }
         proxy_conn_t * curr = config.list_conn; // iterator
         // iterate the connection list to handle requests
-        // Q_FOREACH(..)
-        {
-            // // check whether the fd is set
-            // int curr_fd = ...;
-            // if (!FD_ISSET(curr_fd, &ready)) {
-            // 	continue;
-            // }
-            // // handle the connection
-            // uri_type_t type = ...;
-            // switch (type) {
-            // 	case HTML:
-            // 		// handle html
-            // 		break;
-            // 	case F4M:
-            // 		// handle f4m
-            // 		break;
-            // 	case CHUNK:
-            // 		// handle chunk
-            // 		break;
-            // }
-            // check whether browser of server's fd is set
+        while ((curr != NULL) && (ready_num > 0)) {
             int fd_flag = 0;
             if (FD_ISSET(curr->browser.fd, &ready)) {
                 fd_flag |= PROXY_FD_BROWSER;
@@ -192,6 +196,8 @@ int proxy_run() {
                 // also free resource
                 proxy_conn_close(curr);
             }
+            // update curr pointer
+            curr = curr->next;
         }
     }
     return retval;
@@ -202,10 +208,10 @@ static int proxy_setup_listen() {
     // create socket ipv4
     int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
     if (sock < 0) {
-        perror("procy_setup_listen socket");
+        perror("proxy_setup_listen socket");
         return -1;
     }
-    // set sock for incomming connections
+    // set sock for incoming connections
     FD_SET(sock, &config.ready);
     config.fd_max = sock;
     // initialize address
@@ -215,12 +221,12 @@ static int proxy_setup_listen() {
     proxy_addr.sin_port = htons(config.listen_port);
     // bind to address
     if (bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr_in)) < 0) {
-        perror("procy_setup_listen bind");
+        perror("proxy_setup_listen bind");
         return -1;
     }
     // listen to port
     if (listen(sock, PROXY_MAX_LISTEN) < 0) {
-        perror("procy_setup_listen listen");
+        perror("proxy_setup_listen listen");
         return -1;
     }
     return sock;
@@ -288,6 +294,7 @@ static int handler_server(proxy_conn_t *conn) {
     return ret;
 }
 
+// should init the conn before insert
 void proxy_insert_conn(proxy_conn_t *conn) {
     if (!conn) {
         return;
