@@ -2,14 +2,15 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
-#include "proxy.h"
+#include "proxy2.h"
 
 #define PROXY_MAX_LISTEN (5)
 #define PROXY_FD_BROWSER (1 << 0)
 #define PROXY_FD_SERVER  (1 << 1)
 
 /** Static global configuration */
-static proxy_config_t config;
+//static proxy_config_t config;
+proxy_config_t config; // make it available for testing
 
 /**
  * @brief Setup proxy til listen stage.
@@ -51,19 +52,6 @@ static int handler_browser(proxy_conn_t *conn);
  */
 static int handler_server(proxy_conn_t *conn);
 
-int main(int argc, char **argv) {
-    // arguments parsing
-    if (argc == 7) {
-        proxy_init_config(argv, 0);
-    } else if (argc == 8) {
-        proxy_init_config(argv, 1);
-    } else {
-        // optional: show arguments before exit
-        return -1;
-    }
-    int ret = proxy_run();
-    return ret;
-}
 
 /**
  * @brief Initialize command line configuration.
@@ -80,10 +68,10 @@ void proxy_init_config(char **argv, int www_ip) {
     config.listen_port = atoi(argv[3]);
     inet_aton(argv[4], &config.fake_ip);
     inet_aton(argv[5], &config.dns_ip);
-    config->dns_port = atoi(argv[6]);
-    config->www_ip.s_addr = (long) -1;
+    config.dns_port = atoi(argv[6]);
+    config.www_ip.s_addr = (long) -1;
     if (www_ip == 1) {
-        inet_aton(argv[7], &config->www_ip);
+        inet_aton(argv[7], &config.www_ip);
     }
 }
 
@@ -162,7 +150,7 @@ int proxy_run() {
             proxy_conn_create();
             ready_num--;
         }
-        proxy_conn_t * curr = ...; // iterator
+        proxy_conn_t * curr = config.list_conn; // iterator
         // iterate the connection list to handle requests
         // Q_FOREACH(..)
         {
@@ -186,11 +174,11 @@ int proxy_run() {
             // }
             // check whether browser of server's fd is set
             int fd_flag = 0;
-            if (FD_ISSET(conn->browser.fd, &ready)) {
+            if (FD_ISSET(curr->browser.fd, &ready)) {
                 fd_flag |= PROXY_FD_BROWSER;
                 ready_num--;
             }
-            if (FD_ISSET(conn->server.fd, &ready)) {
+            if (FD_ISSET(curr->server.fd, &ready)) {
                 fd_flag |= PROXY_FD_SERVER;
                 ready_num--;
             }
@@ -201,7 +189,7 @@ int proxy_run() {
             if (ret < 0) {
                 // error handling, remove from connection list?
                 // also free resource
-                proxy_conn_close(conn);
+                proxy_conn_close(curr);
             }
         }
     }
@@ -247,7 +235,7 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
     }
     if (fd_flag & PROXY_FD_SERVER) {
         // handle server's response
-        int ret = handler_server(curr); // handle result
+        int ret = handler_server(conn); // handle result
         if (ret < 0) {
             return -1;
         }
@@ -258,18 +246,18 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 static int handler_browser(proxy_conn_t *conn) {
     int ret = -1;
     switch (conn->browser.type) {
-        case HTML:
+        case REQ_HTML:
             // handle html
-            ret = browser_html(conn);
+//            ret = browser_html(conn);
             break;
-        case F4M:
+        case REQ_F4M:
             // handle f4m
-            ret = browser_f4m(conn);
+//            ret = browser_f4m(conn);
             break;
-        case CHUNK:
+        case REQ_CHUNK:
             // handle chunk
             // modify to adapt to bitrate
-            ret = browser_chunk(conn);
+//            ret = browser_chunk(conn);
             break;
         default:
             ret = -1;

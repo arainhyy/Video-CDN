@@ -8,6 +8,22 @@
 #include "common.h"
 #include "parse.h"
 
+// connection structure
+typedef struct proxy_conn {
+	float T_curr; // current throughput
+	// handout p4: time.h -> time()
+	// .tv_sec, .tv_usec
+	time_t t_s; // t_start, t_f get when chunk fininsh, then update t_s
+	int bitrate; // parsed from f4m
+	// vqueue, link list part, Q_...
+	// ?? use pointer or static?
+	// browser_info
+	// server_info
+	browser_t browser;
+	server_t server;
+	struct proxy_conn *next;
+} proxy_conn_t;
+
 // configuration passed from cli
 typedef struct proxy_config {
 	char log[MAX_PATH_LEN];
@@ -19,24 +35,9 @@ typedef struct proxy_config {
 	struct in_addr www_ip;
 	fd_set ready;
 	int fd_max;
+	proxy_conn_t *list_conn;
 } proxy_config_t;
 
-// connection structure
-typedef struct proxy_conn {
-    server_conn_t * s_conn;
-    float T_curr; // current throughput
-    // handout p4: time.h -> time()
-    // .tv_sec, .tv_usec
-    time_t t_s; // t_start, t_f get when chunk fininsh, then update t_s
-    int bitrate; // parsed from f4m
-    // vqueue, link list part, Q_...
-    // ?? use pointer or static?
-    // browser_info
-    // server_info
-    browser_t browser;
-    server_t server;
-    struct proxy_conn *next;
-} proxy_conn_t;
 
 /*
 struct sockaddr_in myaddr;
@@ -61,6 +62,7 @@ int proxy_run();
 #endif /* !__PROXY_H__ */
 
 
+/*
 // int browser_parse_request(browser_t *req); // parse the request header
 int browser_modify_request(browser_t *req); // modify the req before forward
 
@@ -78,3 +80,4 @@ int update_throughput(proxy_conn_t *conn) {
 	// log(...);
 
 }
+*/
