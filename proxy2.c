@@ -491,16 +491,19 @@ static int handle_resp_html(proxy_conn_t *conn) {
 static int handle_resp_f4m(proxy_conn_t *conn) {
     // 1. parse xml and get list of bitrates
     conn->bitrate_list = parse_xml_to_list(conn->server.request->post_body);
-    // 2. send nolist version of request
+    // 2. request for nolist version
 
 }
 
 static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
     // forward response directly
+    // set state
+    conn->state = CHUNK;
 }
 
 static int handle_resp_chunk(proxy_conn_t *conn) {
     // 1. calculate and update throughput
     // 2. forward response
+    // 3. log to file
 }
 
