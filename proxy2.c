@@ -466,7 +466,8 @@ void proxy_conn_init(proxy_conn_t *conn) {
     conn->t_s = 0;
     conn->bitrate = 0;
     conn->bitrate_list = NULL;
-    // TODO, browser and server
+    memset(&conn->browser, 0, sizeof(conn->browser));
+    memset(&conn->server, 0, sizeof(conn->server));
     conn->transmitted_char_num = 0;
     conn->prev = NULL;
     conn->next = NULL;
