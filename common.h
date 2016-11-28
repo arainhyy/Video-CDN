@@ -2,7 +2,7 @@
 #define __COMMON_H__
 
 #define MAX_PATH_LEN (512)  // log file path length
-#define MAX_REQ_SIZE (4096) // http request limit
+#define MAX_REQ_SIZE (8192) // http request limit
 
 #define IS_F4M (1)
 #define IS_NOT_F4M (0)
