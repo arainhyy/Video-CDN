@@ -319,11 +319,20 @@ static int handler_browser(proxy_conn_t *conn) {
     if (conn->browser.is_chunk) {
         // @TODO, change uri to best bitrate
     }
-    int ret = proxy_req_forward(conn);
-    if (ret < 0) {
-        // close connection
+    switch (conn->browser.type) {
+        case REQ_HTML:
+            conn->state = HTML;
+            break;
+        case REQ_F4M:
+            conn->state = F4M;
+            break;
+        case REQ_CHUNK:
+            conn->state = CHUNK;
+            break;
+        default:
+            return -1;
     }
-    return ret;
+    return proxy_req_forward(conn);
 //    int ret = -1;
 //    switch (conn->browser.type) {
 //        case REQ_HTML:
