@@ -35,15 +35,15 @@ bitrate* parse_xml_to_list(char* buf) {
     printf("Error: illegal xml\n");
     return head;
   }
-  xmlDocPtr docPtr = xmlReadMemory(pt, strlen(pt), "bitrate.xml", NULL, 0);
-  xmlNode* root = xmlDocGetRootElement(docPtr);
-  xmlNode* child = root->children;
-  for (; child; child = child->next) {
-    if (strcmp(child->name, "media") == 0) {
-      xmlChar* bitrate_pt = xmlGetProp(child, "bitrate");
-      if (bitrate_pt != NULL) {
-        sorted_insert_bitrate(atoi(bitrate_pt), &head);
+  while ((pt = strstr(pt, "<media")) != NULL) {
+    pt++;
+    char* bitrate_pt = NULL;
+    if ((bitrate_pt = strstr(pt, "bitrate=")) != NULL) {
+      int bitrate;
+      if (sscanf(bitrate_pt, "bitrate=\"%d\"", &bitrate) < 1) {
+        continue;
       }
+      sorted_insert_bitrate(bitrate, &head);
     }
   }
   return head;
