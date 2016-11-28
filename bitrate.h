@@ -3,6 +3,8 @@
 //#include <libxml/xinclude.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef struct _bitrate {
   int bitrate;

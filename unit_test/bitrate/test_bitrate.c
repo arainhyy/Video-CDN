@@ -24,7 +24,8 @@ static void test_select_bitrate(void **state) {
   head[3].bitrate = 800;
   head[4].bitrate = 1200;
   head[5].bitrate = 1600;
-  assert_int_equal(select_bitrate(head, 99.99999 * 1.5), -1);
+  assert_int_equal(select_bitrate(head, 0 * 1.5), 100);
+  assert_int_equal(select_bitrate(head, 99.99999 * 1.5), 100);
   assert_int_equal(select_bitrate(head, 100 * 1.5), 100);
   assert_int_equal(select_bitrate(head, 100.001 * 1.5), 100);
   assert_int_equal(select_bitrate(head, 399.99 * 1.5), 200);

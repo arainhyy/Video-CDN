@@ -18,7 +18,7 @@ int select_bitrate(bitrate* head, float tpt) {
       pt = pt->next;
     } else break;
   }
-  if (pre == NULL) return -1;
+  if (pre == NULL) return head->bitrate;
   return pre->bitrate;
 }
 
