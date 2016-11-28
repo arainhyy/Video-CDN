@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include "proxy2.h"
+#include "helper.h"
 
 #define PROXY_MAX_LISTEN (5)
 #define PROXY_FD_BROWSER (1 << 0)
@@ -53,6 +54,9 @@ static int handler_browser(proxy_conn_t *conn);
  */
 static int handler_server(proxy_conn_t *conn);
 
+static int browser_html(proxy_conn_t *conn);
+static int browser_f4m(proxy_conn_t *conn);
+static int browser_chunk(proxy_conn_t *conn);
 
 /**
  * @brief Initialize command line configuration.
@@ -306,27 +310,38 @@ static int handler_browser(proxy_conn_t *conn) {
     // parse request
     conn->browser.header = parse(buf, recvlen);
     // check request type
-    // TODO: differentiate request and response types
     conn->browser.type = check_type(conn->browser.header);
-
-    int ret = -1;
-    switch (conn->browser.type) {
-        case REQ_HTML:
-            // handle html
-//            ret = browser_html(conn);
-            break;
-        case REQ_F4M:
-            // handle f4m
-//            ret = browser_f4m(conn);
-            break;
-        case REQ_CHUNK:
-            // handle chunk
-            // modify to adapt to bitrate
-//            ret = browser_chunk(conn);
-            break;
-        default:
-            ret = -1;
+    // connect to server
+    if (proxy_connect_server(conn) < 0) {
+        return -1;
     }
+    // check whether it is chunk request, set flag
+    if (conn->browser.is_chunk) {
+        // @TODO, change uri to best bitrate
+    }
+    int ret = proxy_req_forward(conn);
+    if (ret < 0) {
+        // close connection
+    }
+    return ret;
+//    int ret = -1;
+//    switch (conn->browser.type) {
+//        case REQ_HTML:
+//            // handle html
+////            ret = browser_html(conn);
+//            break;
+//        case REQ_F4M:
+//            // handle f4m
+////            ret = browser_f4m(conn);
+//            break;
+//        case REQ_CHUNK:
+//            // handle chunk
+//            // modify to adapt to bitrate
+////            ret = browser_chunk(conn);
+//            break;
+//        default:
+//            ret = -1;
+//    }
     return ret;
 }
 
@@ -344,23 +359,23 @@ static int handler_server(proxy_conn_t *conn) {
     // TODO: differentiate request and response types
     conn->server.type = check_type(conn->server.header);
     int ret = -1;
-//    switch (conn->browser.type) {
-//        case HTML:
-//            // handle html
-//            ret = server_html(conn);
-//            break;
-//        case F4M:
-//            // handle f4m
-//            ret = server_f4m(conn);
-//            break;
-//        case CHUNK:
-//            // handle chunk
-//            // modify to adapt to bitrate
-//            ret = server_chunk(conn);
-//            break;
-//        default:
-//            ret = -1;
-//    }
+    switch (conn->browser.type) {
+        case RESP_HTML:
+        case RESP_F4M_NOLIST:
+            // handle html
+            break;
+        case F4M:
+            // handle f4m
+            ret = server_f4m(conn);
+            break;
+        case CHUNK:
+            // handle chunk
+            // modify to adapt to bitrate
+            ret = server_chunk(conn);
+            break;
+        default:
+            ret = -1;
+    }
     return ret;
 }
 
@@ -423,3 +438,31 @@ unsigned long get_mill_time() {
     unsigned long mill = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
     return mill;
 }
+
+static int proxy_req_forward(proxy_conn_t *conn) {
+    // forward request directly
+    char buf[MAX_REQ_SIZE] = {0};
+    int len = construct_http_req(buf, conn->browser.header);
+    return send_data(conn->server.fd, len);
+}
+
+static int handle_resp_html(proxy_conn_t *conn) {
+    // forward response directly
+}
+
+static int handle_resp_f4m(proxy_conn_t *conn) {
+    // 1. parse xml and get list of bitrates
+    conn->bitrate_list = parse_xml_to_list(conn->server.header->post_body);
+    // 2. send nolist version of request
+
+}
+
+static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
+    // forward response directly
+}
+
+static int handle_resp_chunk(proxy_conn_t *conn) {
+    // 1. calculate and update throughput
+    // 2. forward response
+}
+

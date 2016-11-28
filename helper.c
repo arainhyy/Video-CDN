@@ -21,7 +21,7 @@ int send_data(int fd, char *buf, int len) {
         // update total_sent
         total_sent += ret;
     }
-    return 0;
+    return total_sent;
 }
 
 void log_init(const char *log_name) {

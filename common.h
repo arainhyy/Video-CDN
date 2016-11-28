@@ -20,6 +20,7 @@ typedef enum req_uri {
 typedef enum resp_uri {
 	RESP_HTML,
 	RESP_F4M,
+	RESP_F4M_NOLIST,
 	RESP_CHUNK,
 	RESP_UK,
 } resp_uri_t;

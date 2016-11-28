@@ -23,6 +23,7 @@ typedef struct proxy_conn {
     struct proxy_conn *prev;
     struct proxy_conn *next;
     int server_accepted;
+    int state;
 } proxy_conn_t;
 
 // configuration passed from cli
