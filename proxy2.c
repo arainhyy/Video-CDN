@@ -93,6 +93,7 @@ void proxy_init_config(char **argv, int www_ip) {
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
+	puts("enter conn create");
     // init browser struct
     struct sockaddr_in browser_addr;
     socklen_t addr_len = sizeof(browser_addr);
@@ -105,7 +106,10 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     }
     // set browser's fd
     conn->browser.fd = browser_sock;
-    FD_SET(browser_sock, &config.ready);
+	if (browser_sock >= config.fd_max) {
+		FD_SET(browser_sock, &config.ready);
+		config.fd_max = browser_sock + 1;
+	}
     // insert to list
     proxy_insert_conn(conn);
     return 0;
@@ -265,8 +269,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     }
     // init server in conn
     FD_SET(sock, &config.ready);
-    if (sock > config.fd_max) {
-        config.fd_max = sock;
+    if (sock >= config.fd_max) {
+        config.fd_max = sock + 1;
     }
     conn->server.fd = sock;
     conn->server.request = NULL;
