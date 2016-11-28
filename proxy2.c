@@ -79,6 +79,7 @@ static void clear_parsed_request(proxy_conn_t *conn, int is_browser);
  * @return Void.
  */
 void proxy_init_config(char **argv, int www_ip) {
+    start_logger("my_log.txt");
     strncpy(config.log, argv[1], MAX_PATH_LEN);
     config.alpha = (float) atof(argv[2]);
     config.listen_port = atoi(argv[3]);
@@ -143,6 +144,7 @@ int proxy_run() {
     // search result from:
     // https://www.cs.cmu.edu/~srini/15-441/F01.full/www/assignments/P2/htmlsim_split/node18.html
     int sock = proxy_setup_listen();
+
     if (sock < 0) {
         return sock;
     }
@@ -168,6 +170,7 @@ int proxy_run() {
         // now ready_num must larger than 0
         // first handle new connection
         if (FD_ISSET(sock, &ready)) {
+            logout("create new connection sock: %d\n", sock);
             proxy_conn_t *new_conn = malloc(sizeof(proxy_conn_t));
             if (new_conn) {
                 proxy_conn_create(sock, new_conn);
