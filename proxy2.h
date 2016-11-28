@@ -9,7 +9,8 @@
 #include "parse.h"
 #include "bitrate.h"
 
-
+#define IS_BROWSER (1)
+#define IS_SERVER (0)
 
 // connection structure
 typedef struct proxy_conn {

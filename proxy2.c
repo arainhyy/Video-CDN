@@ -351,7 +351,7 @@ static int handler_browser(proxy_conn_t *conn) {
         default:
             return -1;
     }
-    clear_parsed_request(conn->browser.request);
+    clear_parsed_request(conn->browser.request, IS_BROWSER);
     return proxy_req_forward(conn);
 //    int ret = -1;
 //    switch (conn->browser.type) {
@@ -389,6 +389,10 @@ static int handler_server(proxy_conn_t *conn) {
                       conn->server.offset : conn->server.to_send_length;
         int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
         conn->server.to_send_length -= send_ret;
+        if (conn->server.to_send_length == 0) {
+            conn->transmitted_char_num += conn->server.request->content_length;
+            clear_parsed_request(conn->browser.request, IS_SERVER);
+        }
         return 0;
     }
     // parse request
