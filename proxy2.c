@@ -469,7 +469,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
     log_record(t_finish/1000000, duration/1000000.0, T, Tcurrent, conn->bitrate,
-                 inet_ntoa(config.www_ip.s_addr), conn->browser.request->http_uri);
+                 inet_ntoa(config.www_ip), conn->browser.request->http_uri);
 }
 
 /* Get timestamp in milliseconds. */
@@ -489,7 +489,7 @@ int proxy_req_forward(proxy_conn_t *conn) {
 
 static int handle_resp_html(proxy_conn_t *conn, const char *response) {
     // forward response directly
-    return send_date(conn->browser.fd, response, strlen(response));
+    return send_data(conn->browser.fd, response, strlen(response));
 }
 
 static int handle_resp_f4m(proxy_conn_t *conn, const char *response) {
