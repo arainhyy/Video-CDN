@@ -349,6 +349,8 @@ static int handler_browser(proxy_conn_t *conn) {
     if (conn->browser.type == REQ_CHUNK) {
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     }
+    int ret = proxy_req_forward(conn);
+    printf("forward req result: %d\n", ret);
     // update state
     switch (conn->browser.type) {
         case REQ_HTML:
@@ -364,26 +366,7 @@ static int handler_browser(proxy_conn_t *conn) {
             return -1;
     }
     clear_parsed_request(conn, IS_BROWSER);
-    return proxy_req_forward(conn);
-//    int ret = -1;
-//    switch (conn->browser.type) {
-//        case REQ_HTML:
-//            // handle html
-////            ret = browser_html(conn);
-//            break;
-//        case REQ_F4M:
-//            // handle f4m
-////            ret = browser_f4m(conn);
-//            break;
-//        case REQ_CHUNK:
-//            // handle chunk
-//            // modify to adapt to bitrate
-////            ret = browser_chunk(conn);
-//            break;
-//        default:
-//            ret = -1;
-//    }
-//    return ret;
+    return ret;
 }
 
 static int handler_server(proxy_conn_t *conn) {
@@ -522,6 +505,7 @@ unsigned long get_mill_time() {
 }
 
 int proxy_req_forward(proxy_conn_t *conn) {
+    puts("forward request directly");
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.request);
