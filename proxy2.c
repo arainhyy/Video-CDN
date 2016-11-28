@@ -351,6 +351,7 @@ static int handler_browser(proxy_conn_t *conn) {
         default:
             return -1;
     }
+    clear_parsed_request(conn->browser.request);
     return proxy_req_forward(conn);
 //    int ret = -1;
 //    switch (conn->browser.type) {
@@ -518,3 +519,30 @@ static int handle_resp_chunk(proxy_conn_t *conn) {
     // 2. forward response
 }
 
+/**
+ * Clear parsed request and its parsed headers.
+ *
+ * @param conn
+ * @param is_browser indicates to clear browser parsed request or server parsed response.
+ */
+static void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
+  struct Request_header* tmp;
+  if (is_browser) {
+      tmp = conn->browser.request->headers;
+  } else {
+      tmp = conn->server.request->headers;
+  }
+  struct Request_header* pre;
+  while (tmp != NULL) {
+      pre = tmp;
+      tmp = tmp->next;
+      free(pre);
+  }
+  if (is_browser) {
+      free(conn->browser.request);
+      conn->browser.request = NULL;
+  } else {
+      free(conn->server.request);
+      conn->server.request = NULL;
+  }
+}
