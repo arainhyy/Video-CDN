@@ -47,8 +47,11 @@ typedef struct browser {
 typedef struct server {
     // server response information
     int fd;
-    Request *header;
+    Request *request;
     resp_uri_t type;
+
+    int offset;
+    char buf[MAX_REQ_SIZE];
 } server_t;
 
 Request *parse(char *buffer, int size);

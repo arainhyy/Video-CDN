@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
+#include <sys/time.h>
+#include <unistd.h>
 #include "proxy2.h"
 #include "helper.h"
 
@@ -276,7 +278,7 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         config.fd_max = sock;
     }
     conn->server.fd = sock;
-    conn->server.header = NULL;
+    conn->server.request = NULL;
     conn->server.type = -1;
     return sock;
 }
@@ -354,10 +356,20 @@ static int handler_server(proxy_conn_t *conn) {
         return -1;
     }
     // parse request
-    conn->server.header = parse(buf, recvlen);
+    conn->server.request = parse(buf, recvlen);
+//    if (con->request->status < 0) {
+//        logout("Incomplete request---------------\n");
+//        con->status -= 1;
+//        break;
+//    }
+//    con->input.offset -= con->request->position;
+//    if (con->input.offset > 0) {
+//        mystrncpy(con->input.buf, con->input.buf + con->request->position,
+//                  con->input.offset);
+//    }
     // check request type
     // TODO: differentiate request and response types
-    conn->server.type = check_type(conn->server.header);
+    conn->server.type = check_type(conn->server.request);
     int ret = -1;
     switch (conn->browser.type) {
         case RESP_HTML:
@@ -452,7 +464,7 @@ static int handle_resp_html(proxy_conn_t *conn) {
 
 static int handle_resp_f4m(proxy_conn_t *conn) {
     // 1. parse xml and get list of bitrates
-    conn->bitrate_list = parse_xml_to_list(conn->server.header->post_body);
+    conn->bitrate_list = parse_xml_to_list(conn->server.request->post_body);
     // 2. send nolist version of request
 
 }
