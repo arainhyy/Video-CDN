@@ -214,19 +214,17 @@ request_headers:
 request_header; |
 request_headers request_header;
 
+request_line_optional:
+request_line | ows;
+
 /*
  * You need to fill this rule, and you are done! You have all the assembly
  * needed. You may wish to define your own rules. Please read RFC 2616
  * and the annotated excerpted text on the course website. All the best!
  *
  */
-request: request_line request_headers t_crlf{
+request: request_line_optional request_headers t_crlf{
 	YPRINTF("parsing_request: Matched Success.\n");
-	return SUCCESS;
-};
-
-response: request_headers t_crlf{
-	YPRINTF("parsing_response: Matched Success.\n");
 	return SUCCESS;
 };
 
