@@ -60,6 +60,11 @@ static int browser_html(proxy_conn_t *conn);
 static int browser_f4m(proxy_conn_t *conn);
 static int browser_chunk(proxy_conn_t *conn);
 
+static int handle_resp_html(proxy_conn_t *conn);
+static int handle_resp_f4m(proxy_conn_t *conn);
+static int handle_resp_chunk(proxy_conn_t *conn);
+
+int handle_server(proxy_conn_t *conn);
 /**
  * @brief Initialize command line configuration.
  *
@@ -353,7 +358,7 @@ static int handler_browser(proxy_conn_t *conn) {
 //        default:
 //            ret = -1;
 //    }
-    return ret;
+//    return ret;
 }
 
 static int handler_server(proxy_conn_t *conn) {
@@ -380,19 +385,20 @@ static int handler_server(proxy_conn_t *conn) {
     // TODO: differentiate request and response types
     conn->server.type = check_type(conn->server.request);
     int ret = -1;
-    switch (conn->browser.type) {
-        case RESP_HTML:
-        case RESP_F4M_NOLIST:
+    switch (conn->state) {
+        case HTML:
+            break;
+        case F4M_NOLIST:
             // handle html
             break;
         case F4M:
             // handle f4m
-            ret = server_f4m(conn);
+            ret = handle_resp_f4m(conn);
             break;
         case CHUNK:
             // handle chunk
             // modify to adapt to bitrate
-            ret = server_chunk(conn);
+            ret = handle_resp_chunk(conn);
             break;
         default:
             ret = -1;
@@ -460,11 +466,11 @@ unsigned long get_mill_time() {
     return mill;
 }
 
-static int proxy_req_forward(proxy_conn_t *conn) {
+int proxy_req_forward(proxy_conn_t *conn) {
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.header);
-    return send_data(conn->server.fd, len);
+    return send_data(conn->server.fd, buf, len);
 }
 
 static int handle_resp_html(proxy_conn_t *conn) {

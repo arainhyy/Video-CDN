@@ -28,7 +28,7 @@ typedef enum resp_uri {
 typedef enum state {
 	HTML,
 	F4M,
-	F4M_NULIST,
+	F4M_NOLIST,
 	CHUNK,
 	UK,
 } state_t;
