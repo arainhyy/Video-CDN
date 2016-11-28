@@ -200,6 +200,9 @@ request_header: token ows t_colon ows text ows t_crlf {
 		sizeof(struct Request_header)*1);
 	strcpy(header->header_name, $1);
 	strcpy(header->header_value, $5);
+	if (strcasecmp(header->header_name, "Content-Length") == 0) {
+		parsing_request->content_length = atoi(header->header_value);
+	}
 	// Insert it to the first place.
 	struct Request_header* tmp = parsing_request->headers;
 	header->next = tmp;
@@ -219,6 +222,11 @@ request_headers request_header;
  */
 request: request_line request_headers t_crlf{
 	YPRINTF("parsing_request: Matched Success.\n");
+	return SUCCESS;
+};
+
+response: request_headers t_crlf{
+	YPRINTF("parsing_response: Matched Success.\n");
 	return SUCCESS;
 };
 

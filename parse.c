@@ -53,20 +53,23 @@ Request *parse(char *buffer, int size) {
     request->content_readed = 0;
     request->position = i;
     request->headers = NULL;
-    // Valid End State
-    if (state == STATE_CRLFCRLF) {
-        set_parsing_options(buf, i, request);
-        request->status = 0;
-        if (yyparse() == SUCCESS) {
-            return request;
-        } else {
-            request->status = 400;
-        }
-    } else {
-        request->status = NEEDMORE;
-    }
-    // Handle Malformed Requests
-    return request;
+    strcpy(request->http_uri, "");
+    strcpy(request->http_method, "");
+    strcpy(request->http_uri, "");
+  	// Valid End State
+	if (state == STATE_CRLFCRLF) {
+		set_parsing_options(buf, i, request);
+		request->status = 0;
+		if (yyparse() == SUCCESS) {
+      		return request;
+		} else {
+			request->status = 400;
+		}
+	} else {
+		request->status = NEEDMORE;
+	}
+  	// Handle Malformed Requests
+  	return request;
 }
 
 /**
