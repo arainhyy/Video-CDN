@@ -41,6 +41,8 @@ typedef struct proxy_config {
     fd_set ready;
     int fd_max;
     proxy_conn_t *list_conn;
+    const char *fake_ip_str;
+    const char *www_ip_str;
 } proxy_config_t;
 
 

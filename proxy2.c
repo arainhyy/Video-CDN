@@ -92,11 +92,13 @@ void proxy_init_config(char **argv, int www_ip) {
     config.alpha = (float) atof(argv[2]);
     config.listen_port = atoi(argv[3]);
     inet_aton(argv[4], &config.fake_ip);
+    config.fake_ip_str = argv[4];
     inet_aton(argv[5], &config.dns_ip);
     config.dns_port = atoi(argv[6]);
     config.www_ip.s_addr = (long) -1;
     if (www_ip == 1) {
         inet_aton(argv[7], &config.www_ip);
+        config.www_ip_str = argv[7];
     }
     config.list_conn = NULL;
 }
@@ -251,7 +253,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     struct sockaddr_in proxy_addr;
     memset(&proxy_addr, 0, sizeof(struct sockaddr_in));
     proxy_addr.sin_family = AF_INET;
-    proxy_addr.sin_addr.s_addr = config.fake_ip.s_addr; // specified in handout
+//    proxy_addr.sin_addr.s_addr = config.fake_ip.s_addr; // specified in handout
+    proxy_addr.sin_addr.s_addr = inet_addr(config.fake_ip_str);
     proxy_addr.sin_port = htons(0); // ephemeral
 
     struct sockaddr_in server_addr;
@@ -259,7 +262,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
     if (config.www_ip.s_addr != -1) {
-        server_addr.sin_addr.s_addr = config.www_ip.s_addr;
+//        server_addr.sin_addr.s_addr = config.www_ip.s_addr;
+        server_addr.sin_addr.s_addr = inet_addr(config.www_ip_str);
     }
     // create socket ipv4
     //int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
