@@ -8,6 +8,7 @@
 #include "proxy2.h"
 #include "helper.h"
 #include "log.h"
+#include "parse.h"
 
 #define PROXY_MAX_LISTEN (5)
 #define PROXY_FD_BROWSER (1 << 0)
@@ -388,6 +389,10 @@ static int handler_server(proxy_conn_t *conn) {
         return 0;
     }
     conn->server.offset -= conn->server.request->position;
+    // Store server response before clear server receiving buffer.
+    char response[MAX_REQ_SIZE];
+    memcpy(response, conn->server.buf, conn->server.request->position);
+    response[conn->server.request->position] = '\0';
     if (conn->server.offset > 0) {
         memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
                   conn->server.offset);
