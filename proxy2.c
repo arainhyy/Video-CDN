@@ -95,6 +95,7 @@ void proxy_init_config(char **argv, int www_ip) {
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
 	puts("enter conn create");
+    proxy_conn_init(conn);
     // init browser struct
     struct sockaddr_in browser_addr;
     socklen_t addr_len = sizeof(browser_addr);
@@ -461,9 +462,17 @@ void proxy_remove_conn(proxy_conn_t *conn) {
 }
 
 void proxy_conn_init(proxy_conn_t *conn) {
+    conn->T_curr = 0;
+    conn->t_s = 0;
+    conn->bitrate = 0;
+    conn->bitrate_list = NULL;
+    // TODO, browser and server
+    conn->transmitted_char_num = 0;
     conn->prev = NULL;
     conn->next = NULL;
     conn->server_accepted = 0;
+    conn->server_accepted = 0;
+    conn->state = 0;
 }
 
 unsigned long get_mill_time();
