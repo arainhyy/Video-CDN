@@ -54,7 +54,7 @@ typedef struct server {
 
     int offset;
     char buf[MAX_REQ_SIZE];
-    int sent_length;
+    int to_send_length;
     char f4m_request[MAX_REQ_SIZE];
 } server_t;
 
