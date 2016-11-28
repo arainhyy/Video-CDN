@@ -22,7 +22,7 @@ typedef struct proxy_conn {
     bitrate *bitrate_list; // parsed from f4m
     browser_t browser;
     server_t server;
-    int transmitted_char_num; // Get updated when receive chunk data from server. Used to estimate throughput.
+
     struct proxy_conn *prev;
     struct proxy_conn *next;
     int server_accepted;
