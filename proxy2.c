@@ -382,8 +382,17 @@ static int handler_server(proxy_conn_t *conn) {
         return -1;
     }
     conn->server.offset += recvlen;
+    // check if it has sent all content body of last request to client.
+    if (conn->server.to_send_length > 0) {
+        int to_send = conn->server.to_send_length > conn->server.offset ?
+                      conn->server.offset : conn->server.to_send_length;
+        int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
+        conn->server.to_send_length -= send_ret;
+        return 0;
+    }
     // parse request
     conn->server.request = parse(conn->server.buf, recvlen);
+    conn->server.to_send_length = conn->server.request->content_length;
     if (conn->server.request->status < 0) {
         printf("Incomplete request---------------\n");
         return 0;
