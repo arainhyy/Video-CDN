@@ -469,7 +469,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
     log_record(t_finish/1000000, duration/1000000.0, T, Tcurrent, conn->bitrate,
-                 server_ip, chunk_name);
+                 inet_ntoa(config.www_ip.s_addr), conn->browser.request->http_uri);
 }
 
 /* Get timestamp in milliseconds. */
