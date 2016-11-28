@@ -60,7 +60,7 @@ void proxy_init_config(char **argv, int www_ip);
 
 int proxy_conn_create(int sock, proxy_conn_t *conn);
 
-void proxy_conn_close();
+void proxy_conn_close(proxy_conn_t *conn);
 
 int proxy_browser();
 
