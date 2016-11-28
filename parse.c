@@ -49,6 +49,9 @@ Request * parse(char *buffer, int size, int socketFd) {
 	request->content_readed = 0;
 	request->position = i;
     request->headers = NULL;
+    strcpy(request->http_uri, "");
+    strcpy(request->http_method, "");
+    strcpy(request->http_uri, "");
   	// Valid End State
 	if (state == STATE_CRLFCRLF) {
 		set_parsing_options(buf, i, request);
