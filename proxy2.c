@@ -383,6 +383,8 @@ static int handler_server(proxy_conn_t *conn) {
     puts("handle server");
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
+	puts("response:");
+	//puts(conn->server.buf + conn->server.offset);
     if (recvlen < 0) {
         perror("handler_server recv");
         return -1;
@@ -401,33 +403,52 @@ static int handler_server(proxy_conn_t *conn) {
         return 0;
     }
     // parse request
-    conn->server.request = parse(conn->server.buf, recvlen);
-    conn->server.to_send_length = conn->server.request->content_length;
-    if (conn->server.request->status < 0) {
-        printf("Incomplete request---------------\n");
-        return 0;
-    }
-    conn->server.offset -= conn->server.request->position;
+	char *resp_body = strcasestr(conn->server.buf, "\r\n\r\n");
+	puts("resp body:");
+	//puts(resp_body + 4);
+	char content_len[50] = {0};
+	char *cl_start = strcasestr(conn->server.buf, "content-length: ");
+	cl_start += 16;
+	char *cl_end = strcasestr(cl_start, "\r\n");
+	//printf("start %p, end %p, val %s\n", cl_start, cl_end, cl_start);
+	printf("pt diff: %d\n", cl_end - cl_start);
+	strncpy(content_len, cl_start, (cl_end - cl_start));
+	content_len[(cl_end - cl_start)] = '\0';
+	printf("content-len: %d, %s\n", atoi(content_len), content_len);
+
+    //conn->server.request = parse(conn->server.buf, recvlen);
+    //conn->server.to_send_length = conn->server.request->content_length;
+    //if (conn->server.request->status < 0) {
+    //    printf("Incomplete request---------------\n");
+    //    return 0;
+    //}
+    //conn->server.offset -= conn->server.request->position;
     // Store server response before clear server receiving buffer.
     char response[MAX_REQ_SIZE];
-    memcpy(response, conn->server.buf, conn->server.request->position);
-    response[conn->server.request->position] = '\0';
-    if (conn->server.offset > 0) {
-        memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
-                conn->server.offset);
-    }
+    //memcpy(response, conn->server.buf, conn->server.request->position);
+    //response[conn->server.request->position] = '\0';
+	memcpy(response, resp_body + 4, atoi(content_len));
+	response[atoi(content_len)] = '\0';
+	puts("processed response");
+	puts(response);
+    //if (conn->server.offset > 0) {
+    //    memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
+    //            conn->server.offset);
+    //}
     // check request type
     // TODO: differentiate request and response types
-    conn->server.type = check_type(conn->server.request);
+    //conn->server.type = check_type(conn->server.request);
     int ret = -1;
     switch (conn->state) {
         case HTML:
             break;
         case F4M_NOLIST:
             // handle html
+			puts("handle f4m nolist response");
             break;
         case F4M:
             // handle f4m
+			puts("handle f4m response");
             ret = handle_resp_f4m(conn, response);
             break;
         case CHUNK:
@@ -518,6 +539,8 @@ int proxy_req_forward(proxy_conn_t *conn) {
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.request);
+	puts("forward req");
+	puts(buf);
     return send_data(conn->server.fd, buf, len);
 }
 
@@ -532,6 +555,7 @@ static int handle_resp_f4m(proxy_conn_t *conn, const char *response) {
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
+	puts("send f4m nolist request");
     // 3. set state
     conn->state = F4M_NOLIST;
     return ret;
