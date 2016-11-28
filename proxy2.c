@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include "proxy2.h"
 #include "helper.h"
+#include "log.h"
 
 #define PROXY_MAX_LISTEN (5)
 #define PROXY_FD_BROWSER (1 << 0)
@@ -308,16 +309,26 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 
 static int handler_browser(proxy_conn_t *conn) {
     // read from socket
-    char buf[MAX_REQ_SIZE] = {0};
-    int recvlen = recv(conn->browser.fd, buf, sizeof(buf), MSG_DONTWAIT);
+    int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
+                     MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
         perror("handler_browser recv");
         return -1;
     }
+    conn->browser.offset += recvlen;
     // parse request
-    conn->browser.header = parse(buf, recvlen);
+    conn->browser.request = parse(conn->browser.buf, recvlen);
+    if (conn->browser.request->status < 0) {
+      printf("Incomplete request---------------\n");
+      return 0;
+    }
+    conn->browser.offset -= conn->browser.request->position;
+    if (conn->browser.offset > 0) {
+      memmove(conn->browser.buf, conn->browser.buf + conn->browser.request->position,
+              conn->browser.offset);
+    }
     // check request type
-    conn->browser.type = check_type(conn->browser.header);
+    conn->browser.type = check_type(conn->browser.request);
     // connect to server
     if (proxy_connect_server(conn) < 0) {
         return -1;
@@ -363,24 +374,24 @@ static int handler_browser(proxy_conn_t *conn) {
 
 static int handler_server(proxy_conn_t *conn) {
     // read from socket
-    char buf[MAX_REQ_SIZE] = {0};
-    int recvlen = recv(conn->server.fd, buf, sizeof(buf), MSG_DONTWAIT);
+    int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
+                       MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
         perror("handler_server recv");
         return -1;
     }
+    conn->server.offset += recvlen;
     // parse request
-    conn->server.request = parse(buf, recvlen);
-//    if (con->request->status < 0) {
-//        logout("Incomplete request---------------\n");
-//        con->status -= 1;
-//        break;
-//    }
-//    con->input.offset -= con->request->position;
-//    if (con->input.offset > 0) {
-//        mystrncpy(con->input.buf, con->input.buf + con->request->position,
-//                  con->input.offset);
-//    }
+    conn->server.request = parse(conn->server.buf, recvlen);
+    if (conn->server.request->status < 0) {
+        printf("Incomplete request---------------\n");
+        return 0;
+    }
+    conn->server.offset -= conn->server.request->position;
+    if (conn->server.offset > 0) {
+        memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
+                  conn->server.offset);
+    }
     // check request type
     // TODO: differentiate request and response types
     conn->server.type = check_type(conn->server.request);
@@ -469,7 +480,7 @@ unsigned long get_mill_time() {
 int proxy_req_forward(proxy_conn_t *conn) {
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
-    int len = construct_http_req(buf, conn->browser.header);
+    int len = construct_http_req(buf, conn->browser.request);
     return send_data(conn->server.fd, buf, len);
 }
 

@@ -38,10 +38,12 @@ typedef struct {
 typedef struct browser {
     // browser request information
     int fd;
-    Request *header;
+    Request *request;
     req_uri_t type; // ?? replace by below
     int is_chunk; // if not chunk, directly forward;
                   // otherwise, change to appropriate bitrate
+    int offset;
+    char buf[MAX_REQ_SIZE];
 } browser_t;
 
 typedef struct server {
