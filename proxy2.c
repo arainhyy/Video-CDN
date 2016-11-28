@@ -250,7 +250,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         server_addr.sin_addr.s_addr = config.www_ip.s_addr;
     }
     // create socket ipv4
-    int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
+    //int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("proxy_connect_server socket");
         return -1;
@@ -298,6 +299,7 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 
 static int handler_browser(proxy_conn_t *conn) {
     // read from socket
+	puts("handle browser");
     int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
                      MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
@@ -364,6 +366,7 @@ static int handler_browser(proxy_conn_t *conn) {
 
 static int handler_server(proxy_conn_t *conn) {
     // read from socket
+	puts("handle server");
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
