@@ -148,7 +148,9 @@ int proxy_run() {
     while (1) {
         // copy fd set for select
         fd_set ready = config.ready;
+		puts("before select");
         int ready_num = select(config.fd_max, &ready, NULL, NULL, NULL);
+		puts("after select");
         // error handling
         if (ready_num < 0) {
             perror("proxy_run");
@@ -209,7 +211,7 @@ static int proxy_setup_listen() {
     }
     // set sock for incoming connections
     FD_SET(sock, &config.ready);
-    config.fd_max = sock;
+    config.fd_max = sock + 1;
     // initialize address
     struct sockaddr_in proxy_addr;
     proxy_addr.sin_family = AF_INET;

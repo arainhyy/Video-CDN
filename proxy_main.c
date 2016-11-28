@@ -6,6 +6,7 @@ int main(int argc, char **argv) {
     if (argc == 7) {
         proxy_init_config(argv, 0);
     } else if (argc == 8) {
+	    puts("Correct !");
         proxy_init_config(argv, 1);
     } else {
         // optional: show arguments before exit
