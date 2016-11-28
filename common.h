@@ -25,4 +25,12 @@ typedef enum resp_uri {
 	RESP_UK,
 } resp_uri_t;
 
+typedef enum state {
+	HTML,
+	F4M,
+	F4M_NULIST,
+	CHUNK,
+	UK,
+} state_t;
+
 #endif /* !__COMMON_H__ */

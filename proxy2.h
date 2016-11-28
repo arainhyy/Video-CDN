@@ -9,6 +9,8 @@
 #include "parse.h"
 #include "bitrate.h"
 
+
+
 // connection structure
 typedef struct proxy_conn {
     float T_curr; // current throughput
@@ -23,7 +25,7 @@ typedef struct proxy_conn {
     struct proxy_conn *prev;
     struct proxy_conn *next;
     int server_accepted;
-    int state;
+    state_t state;
 } proxy_conn_t;
 
 // configuration passed from cli
