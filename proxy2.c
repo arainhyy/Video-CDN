@@ -62,9 +62,9 @@ static int browser_html(proxy_conn_t *conn);
 static int browser_f4m(proxy_conn_t *conn);
 static int browser_chunk(proxy_conn_t *conn);
 
-static int handle_resp_html(proxy_conn_t *conn);
-static int handle_resp_f4m(proxy_conn_t *conn);
-static int handle_resp_chunk(proxy_conn_t *conn);
+static int handle_resp_html(proxy_conn_t *conn, const char *response);
+static int handle_resp_f4m(proxy_conn_t *conn, const char *response);
+static int handle_resp_chunk(proxy_conn_t *conn, const char *response);
 
 int handle_server(proxy_conn_t *conn);
 /**
@@ -123,27 +123,6 @@ void proxy_conn_close(proxy_conn_t *conn) {
     }
     // remove from conn list
     proxy_remove_conn(conn);
-}
-
-int proxy_browser() {
-    // parse request from browser, if error return neg
-    // browser_parse_request(proxy_conn_t -> browser_t)
-
-    // modify request as specified, IMPORTANT@p5
-    // modify_browser_request(proxy_conn_t -> browser_t)
-    // also need to update connection's t_s here IF REQUEST IS A CUNK!!
-
-    // send modified request to server
-    // send_request(...->server's fd, request buffer)
-    // cleanup request buffer?
-
-}
-
-int proxy_server() {
-    // forward the data sent by server
-
-    // send the data to client's fd
-
 }
 
 int proxy_run() {
@@ -351,7 +330,7 @@ static int handler_browser(proxy_conn_t *conn) {
         default:
             return -1;
     }
-    clear_parsed_request(conn->browser.request, IS_BROWSER);
+    clear_parsed_request(conn, IS_BROWSER);
     return proxy_req_forward(conn);
 //    int ret = -1;
 //    switch (conn->browser.type) {
@@ -391,7 +370,7 @@ static int handler_server(proxy_conn_t *conn) {
         conn->server.to_send_length -= send_ret;
         if (conn->server.to_send_length == 0) {
             conn->transmitted_char_num += conn->server.request->content_length;
-            clear_parsed_request(conn->browser.request, IS_SERVER);
+            clear_parsed_request(conn, IS_SERVER);
         }
         return 0;
     }
@@ -428,7 +407,7 @@ static int handler_server(proxy_conn_t *conn) {
         case CHUNK:
             // handle chunk
             // modify to adapt to bitrate
-            ret = handle_resp_chunk(conn);
+            ret = handle_resp_chunk(conn, response);
             break;
         default:
             ret = -1;
@@ -531,9 +510,9 @@ static int handle_resp_chunk(proxy_conn_t *conn, const char *response) {
     float t_est;
     // estimate_throughput(conn, conn->server.) // TODO
     // 2. forward response
-    send_data(fd, response, strlen(response));
+    send_data(conn->browser.fd, response, strlen(response));
     // 3. log to file
-    log_record(get_mill_time() / 1000, ); // TODO
+    //log_record(get_mill_time() / 1000, ); // TODO
 }
 
 /**
@@ -542,7 +521,7 @@ static int handle_resp_chunk(proxy_conn_t *conn, const char *response) {
  * @param conn
  * @param is_browser indicates to clear browser parsed request or server parsed response.
  */
-static void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
+void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
   struct Request_header* tmp;
   if (is_browser) {
       tmp = conn->browser.request->headers;
