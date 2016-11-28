@@ -1,6 +1,6 @@
-#include <libxml/parser.h>
-#include <libxml/xmlIO.h>
-#include <libxml/xinclude.h>
+//#include <libxml/parser.h>
+//#include <libxml/xmlIO.h>
+//#include <libxml/xinclude.h>
 #include <string.h>
 #include <limits.h>
 
