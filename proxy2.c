@@ -346,10 +346,19 @@ static int handler_browser(proxy_conn_t *conn) {
 	puts("conn server succ");
 	printf("req type: %d\n", conn->browser.type);
     // check whether it is chunk request, set flag
+    int ret = -1;
     if (conn->browser.type == REQ_CHUNK) {
+        printf("forward chunk req: %d\n", ret);
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
+        // forward request directly
+        char buf[MAX_REQ_SIZE] = {0};
+        int len = construct_http_req(buf, conn->browser.request);
+        // replace bitrate
+        replace_uri_bitrate(buf, conn->bitrate);
+        ret = send_data(conn->server.fd, buf, len);
+    } else {
+        ret = proxy_req_forward(conn);
     }
-    int ret = proxy_req_forward(conn);
     printf("forward req result: %d\n", ret);
     // update state
     switch (conn->browser.type) {

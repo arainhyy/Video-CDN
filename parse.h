@@ -56,6 +56,7 @@ typedef struct server {
     char buf[MAX_REQ_SIZE];
     int to_send_length;
     char f4m_request[MAX_REQ_SIZE];
+    int response_complete;
 } server_t;
 
 Request *parse(char *buffer, int size);
