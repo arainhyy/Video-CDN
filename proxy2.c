@@ -66,7 +66,9 @@ static int handle_resp_html(proxy_conn_t *conn, const char *response);
 static int handle_resp_f4m(proxy_conn_t *conn, const char *response);
 static int handle_resp_chunk(proxy_conn_t *conn, const char *response);
 
+
 int handle_server(proxy_conn_t *conn);
+void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size);
 
 static void clear_parsed_request(proxy_conn_t *conn, int is_browser);
 /**
@@ -330,7 +332,7 @@ static int handler_browser(proxy_conn_t *conn) {
     }
     // check whether it is chunk request, set flag
     if (conn->browser.is_chunk) {
-        // @TODO, change uri to best bitrate
+        conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     }
     switch (conn->browser.type) {
         case REQ_HTML:
@@ -385,7 +387,7 @@ static int handler_server(proxy_conn_t *conn) {
         int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
         conn->server.to_send_length -= send_ret;
         if (conn->server.to_send_length == 0) {
-            conn->transmitted_char_num += conn->server.request->content_length;
+            estimate_throughput(conn, conn->server.request->content_length);
             clear_parsed_request(conn, IS_SERVER);
         }
         return 0;
@@ -468,7 +470,6 @@ void proxy_conn_init(proxy_conn_t *conn) {
     conn->bitrate_list = NULL;
     memset(&conn->browser, 0, sizeof(conn->browser));
     memset(&conn->server, 0, sizeof(conn->server));
-    conn->transmitted_char_num = 0;
     conn->prev = NULL;
     conn->next = NULL;
     conn->server_accepted = 0;
@@ -484,11 +485,12 @@ unsigned long get_mill_time();
  * @param conn
  * @param chunk_size
  */
+//void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long t_finish = get_mill_time();
     // Exchange T to Kbps.
     unsigned long duration = t_finish - conn->t_s;
-    unsigned long T = (double)conn->transmitted_char_num * 1000.0 * 8.0 / duration;
+    unsigned long T = (double)chunk_size * 1000.0 * 8.0 / duration;
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
     log_record(t_finish/1000000, duration/1000000.0, T, Tcurrent, conn->bitrate,
