@@ -274,12 +274,14 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     }
     int ret = bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr));
     if (ret < 0) {
+		puts("bind error!");
         perror("proxy_connect_server bind");
         close(sock);
         return -1;
     }
     ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
     if (ret < 0) {
+		puts("connection error!");
         perror("proxy_connect_server connect");
         close(sock);
         return -1;
@@ -338,8 +340,11 @@ static int handler_browser(proxy_conn_t *conn) {
     conn->browser.type = check_type(conn->browser.request);
     // connect to server
     if (proxy_connect_server(conn) < 0) {
+		puts("conn server fail");
         return -1;
     }
+	puts("conn server succ");
+	printf("req type: %d\n", conn->browser.type);
     // check whether it is chunk request, set flag
     if (conn->browser.type == REQ_CHUNK) {
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
