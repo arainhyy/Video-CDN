@@ -409,7 +409,7 @@ static int handler_server(proxy_conn_t *conn) {
             break;
         case F4M:
             // handle f4m
-            ret = handle_resp_f4m(conn);
+            ret = handle_resp_f4m(conn, response);
             break;
         case CHUNK:
             // handle chunk
@@ -489,26 +489,36 @@ int proxy_req_forward(proxy_conn_t *conn) {
     return send_data(conn->server.fd, buf, len);
 }
 
-static int handle_resp_html(proxy_conn_t *conn) {
+static int handle_resp_html(proxy_conn_t *conn, const char *response) {
     // forward response directly
+    return send_date(conn->browser.fd, response, strlen(response));
 }
 
-static int handle_resp_f4m(proxy_conn_t *conn) {
+static int handle_resp_f4m(proxy_conn_t *conn, const char *response) {
     // 1. parse xml and get list of bitrates
     conn->bitrate_list = parse_xml_to_list(conn->server.request->post_body);
     // 2. request for nolist version
-
+    replace_f4m_to_nolist(conn->server.f4m_request);
+    int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
+    // 3. set state
+    conn->state = F4M_NOLIST;
+    return ret;
 }
 
-static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
+static int handle_resp_f4m_nolist(proxy_conn_t *conn, const char *response) {
     // forward response directly
-    // set state
-    conn->state = CHUNK;
+    int ret = send_data(conn->browser.fd, response, strlen(response));
+    return ret;
 }
 
-static int handle_resp_chunk(proxy_conn_t *conn) {
+static int handle_resp_chunk(proxy_conn_t *conn, const char *response) {
     // 1. calculate and update throughput
+    float t_old = conn->T_curr;
+    float t_est;
+    // estimate_throughput(conn, conn->server.) // TODO
     // 2. forward response
+    send_data(fd, response, strlen(response));
     // 3. log to file
+    log_record(get_mill_time() / 1000, ); // TODO
 }
 
