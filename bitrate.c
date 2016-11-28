@@ -1,5 +1,6 @@
 #include "bitrate.h"
 
+void sorted_insert_bitrate(int bitrate_num, bitrate** head);
 /**
  * Pick a bitrate less than throughput / 1.5.
  *

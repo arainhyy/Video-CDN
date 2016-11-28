@@ -1,7 +1,10 @@
 CC=gcc
 CFLAGS=-I.
 DEPS = parse.h y.tab.h
-OBJ = y.tab.o lex.yy.o log.o proxy.o
+OBJ = y.tab.o lex.yy.o log.o \
+      proxy2.o proxy_main.o helper.o \
+      parse.o bitrate.o
+      #proxy.o
 FLAGS = -g -Wall
 
 default:all
