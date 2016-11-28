@@ -14,7 +14,7 @@
 
 // connection structure
 typedef struct proxy_conn {
-    float T_curr; // current throughput
+    unsigned long T_curr; // current throughput
     // handout p4: time.h -> time()
     // .tv_sec, .tv_usec
     unsigned long t_s; // t_start, t_f get when chunk finish, then update t_s

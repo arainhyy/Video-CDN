@@ -31,12 +31,23 @@ void log_init(const char *log_name) {
     }
 }
 
-void log_record(int time, const char *client_ip,
-                const char *query_name, const char *response_ip) {
+//void log_record(int time, const char *client_ip,
+//                const char *query_name, const char *response_ip) {
+//    if (!log_fp) {
+//        return;
+//    }
+//    int ret = fprintf(log_fp, "%d %s %s %s\n", time, client_ip, query_name, response_ip);
+//    if (ret < 0) {
+//        perror("log_record");
+//    }
+//}
+void log_record(unsigned long time, float duration, unsigned long t_put, unsigned long avg_tput,
+                int bitrate, const char *server_ip, const char *chunk_name) {
     if (!log_fp) {
         return;
     }
-    int ret = fprintf(log_fp, "%d %s %s %s\n", time, client_ip, query_name, response_ip);
+    int ret = fprintf(log_fp, "%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
+                      chunk_name);
     if (ret < 0) {
         perror("log_record");
     }

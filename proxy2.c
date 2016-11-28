@@ -67,6 +67,8 @@ static int handle_resp_f4m(proxy_conn_t *conn);
 static int handle_resp_chunk(proxy_conn_t *conn);
 
 int handle_server(proxy_conn_t *conn);
+
+static void clear_parsed_request(proxy_conn_t *conn, int is_browser);
 /**
  * @brief Initialize command line configuration.
  *
@@ -351,7 +353,7 @@ static int handler_browser(proxy_conn_t *conn) {
         default:
             return -1;
     }
-    clear_parsed_request(conn->browser.request, IS_BROWSER);
+    clear_parsed_request(conn, IS_BROWSER);
     return proxy_req_forward(conn);
 //    int ret = -1;
 //    switch (conn->browser.type) {
@@ -391,7 +393,7 @@ static int handler_server(proxy_conn_t *conn) {
         conn->server.to_send_length -= send_ret;
         if (conn->server.to_send_length == 0) {
             conn->transmitted_char_num += conn->server.request->content_length;
-            clear_parsed_request(conn->browser.request, IS_SERVER);
+            clear_parsed_request(conn, IS_SERVER);
         }
         return 0;
     }
@@ -483,9 +485,12 @@ unsigned long get_mill_time();
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long t_finish = get_mill_time();
     // Exchange T to Kbps.
-    unsigned long T = (double)conn->transmitted_char_num * 1000.0 * 8.0 / (t_finish - conn->t_s);
-    unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->bitrate;
-    conn->bitrate = (int) Tcurrent;
+    unsigned long duration = t_finish - conn->t_s;
+    unsigned long T = (double)conn->transmitted_char_num * 1000.0 * 8.0 / duration;
+    unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+    conn->T_curr = (int) Tcurrent;
+    log_record(t_finish/1000000, duration/1000000.0, T, Tcurrent, conn->bitrate,
+                 server_ip, chunk_name);
 }
 
 /* Get timestamp in milliseconds. */
