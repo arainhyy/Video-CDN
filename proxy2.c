@@ -59,18 +59,24 @@ static int handler_browser(proxy_conn_t *conn);
 static int handler_server(proxy_conn_t *conn);
 
 static int browser_html(proxy_conn_t *conn);
+
 static int browser_f4m(proxy_conn_t *conn);
+
 static int browser_chunk(proxy_conn_t *conn);
 
 static int handle_resp_html(proxy_conn_t *conn, const char *response);
+
 static int handle_resp_f4m(proxy_conn_t *conn, const char *response);
+
 static int handle_resp_chunk(proxy_conn_t *conn, const char *response);
 
 
 int handle_server(proxy_conn_t *conn);
+
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size);
 
 static void clear_parsed_request(proxy_conn_t *conn, int is_browser);
+
 /**
  * @brief Initialize command line configuration.
  *
@@ -96,7 +102,7 @@ void proxy_init_config(char **argv, int www_ip) {
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
-	puts("enter conn create");
+    puts("enter conn create");
     proxy_conn_init(conn);
     // init browser struct
     struct sockaddr_in browser_addr;
@@ -110,10 +116,10 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     }
     // set browser's fd
     conn->browser.fd = browser_sock;
-	if (browser_sock >= config.fd_max) {
-		FD_SET(browser_sock, &config.ready);
-		config.fd_max = browser_sock + 1;
-	}
+    if (browser_sock >= config.fd_max) {
+        FD_SET(browser_sock, &config.ready);
+        config.fd_max = browser_sock + 1;
+    }
     // insert to list
     proxy_insert_conn(conn);
     return 0;
@@ -157,9 +163,9 @@ int proxy_run() {
     while (1) {
         // copy fd set for select
         fd_set ready = config.ready;
-		puts("before select");
+        puts("before select");
         int ready_num = select(config.fd_max, &ready, NULL, NULL, NULL);
-		puts("after select");
+        puts("after select");
         // error handling
         if (ready_num < 0) {
             perror("proxy_run");
@@ -182,7 +188,7 @@ int proxy_run() {
             }
             ready_num--;
         }
-        proxy_conn_t * curr = config.list_conn; // iterator
+        proxy_conn_t *curr = config.list_conn; // iterator
         // iterate the connection list to handle requests
         while ((curr != NULL) && (ready_num > 0)) {
             int fd_flag = 0;
@@ -262,7 +268,7 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         perror("proxy_connect_server socket");
         return -1;
     }
-    int ret = bind(sock, (struct sockaddr*) (&proxy_addr), sizeof(struct sockaddr));
+    int ret = bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr));
     if (ret < 0) {
         perror("proxy_connect_server bind");
         close(sock);
@@ -305,9 +311,9 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 
 static int handler_browser(proxy_conn_t *conn) {
     // read from socket
-	puts("handle browser");
+    puts("handle browser");
     int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
-                     MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
+                       MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
         perror("handler_browser recv");
         return -1;
@@ -316,13 +322,13 @@ static int handler_browser(proxy_conn_t *conn) {
     // parse request
     conn->browser.request = parse(conn->browser.buf, recvlen);
     if (conn->browser.request->status < 0) {
-      printf("Incomplete request---------------\n");
-      return 0;
+        printf("Incomplete request---------------\n");
+        return 0;
     }
     conn->browser.offset -= conn->browser.request->position;
     if (conn->browser.offset > 0) {
-      memmove(conn->browser.buf, conn->browser.buf + conn->browser.request->position,
-              conn->browser.offset);
+        memmove(conn->browser.buf, conn->browser.buf + conn->browser.request->position,
+                conn->browser.offset);
     }
     // check request type
     conn->browser.type = check_type(conn->browser.request);
@@ -331,9 +337,10 @@ static int handler_browser(proxy_conn_t *conn) {
         return -1;
     }
     // check whether it is chunk request, set flag
-    if (conn->browser.is_chunk) {
+    if (conn->browser.type == REQ_CHUNK) {
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     }
+    // update state
     switch (conn->browser.type) {
         case REQ_HTML:
             conn->state = HTML;
@@ -372,7 +379,7 @@ static int handler_browser(proxy_conn_t *conn) {
 
 static int handler_server(proxy_conn_t *conn) {
     // read from socket
-	puts("handle server");
+    puts("handle server");
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
@@ -406,7 +413,7 @@ static int handler_server(proxy_conn_t *conn) {
     response[conn->server.request->position] = '\0';
     if (conn->server.offset > 0) {
         memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
-                  conn->server.offset);
+                conn->server.offset);
     }
     // check request type
     // TODO: differentiate request and response types
@@ -490,11 +497,11 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long t_finish = get_mill_time();
     // Exchange T to Kbps.
     unsigned long duration = t_finish - conn->t_s;
-    unsigned long T = (double)chunk_size * 1000.0 * 8.0 / duration;
+    unsigned long T = (double) chunk_size * 1000.0 * 8.0 / duration;
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
-    log_record(t_finish/1000000, duration/1000000.0, T, Tcurrent, conn->bitrate,
-                 inet_ntoa(config.www_ip), conn->browser.request->http_uri);
+    log_record(t_finish / 1000000, duration / 1000000.0, T, Tcurrent, conn->bitrate,
+               inet_ntoa(config.www_ip), conn->browser.request->http_uri);
 }
 
 /* Get timestamp in milliseconds. */
@@ -552,23 +559,23 @@ static int handle_resp_chunk(proxy_conn_t *conn, const char *response) {
  * @param is_browser indicates to clear browser parsed request or server parsed response.
  */
 void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
-  struct Request_header* tmp;
-  if (is_browser) {
-      tmp = conn->browser.request->headers;
-  } else {
-      tmp = conn->server.request->headers;
-  }
-  struct Request_header* pre;
-  while (tmp != NULL) {
-      pre = tmp;
-      tmp = tmp->next;
-      free(pre);
-  }
-  if (is_browser) {
-      free(conn->browser.request);
-      conn->browser.request = NULL;
-  } else {
-      free(conn->server.request);
-      conn->server.request = NULL;
-  }
+    struct Request_header *tmp;
+    if (is_browser) {
+        tmp = conn->browser.request->headers;
+    } else {
+        tmp = conn->server.request->headers;
+    }
+    struct Request_header *pre;
+    while (tmp != NULL) {
+        pre = tmp;
+        tmp = tmp->next;
+        free(pre);
+    }
+    if (is_browser) {
+        free(conn->browser.request);
+        conn->browser.request = NULL;
+    } else {
+        free(conn->server.request);
+        conn->server.request = NULL;
+    }
 }
