@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "proxy2.h"
 
 int main(int argc, char **argv) {
@@ -8,6 +9,8 @@ int main(int argc, char **argv) {
         proxy_init_config(argv, 1);
     } else {
         // optional: show arguments before exit
+        puts("Usage:");
+        puts("./proxy <log> <alpha> <listen-port> <fake-ip> <dns-ip> <dns-port> <www-ip>");
         return -1;
     }
     int ret = proxy_run();

@@ -201,7 +201,8 @@ int proxy_run() {
 static int proxy_setup_listen() {
     FD_ZERO(&config.ready);
     // create socket ipv4
-    int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
+//    int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("proxy_setup_listen socket");
         return -1;

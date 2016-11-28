@@ -3,7 +3,7 @@ CFLAGS=-I.
 DEPS = parse.h y.tab.h
 OBJ = y.tab.o lex.yy.o log.o \
       proxy2.o proxy_main.o helper.o \
-      parse.o bitrate.o
+      parse.o bitrate.o \
       #proxy.o
 FLAGS = -g -Wall
 LIB=-I/usr/local/include -L/usr/lib/x86_64-linux-gnu -lxml2
