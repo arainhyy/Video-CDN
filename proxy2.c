@@ -121,8 +121,9 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     }
     // set browser's fd
     conn->browser.fd = browser_sock;
+	FD_SET(browser_sock, &config.ready);
+	printf("fdset: %d\n", browser_sock);
     if (browser_sock >= config.fd_max) {
-        FD_SET(browser_sock, &config.ready);
         config.fd_max = browser_sock + 1;
     }
     // insert to list
@@ -136,11 +137,13 @@ void proxy_conn_close(proxy_conn_t *conn) {
     if (conn->browser.fd != 0) {
         close(conn->browser.fd);
         FD_CLR(conn->browser.fd, &config.ready);
+		printf("fdclr: %d\n", conn->browser.fd);
         conn->browser.fd = 0;
     }
     if (conn->server.fd != 0) {
         close(conn->server.fd);
         FD_CLR(conn->server.fd, &config.ready);
+		printf("fdclr: %d\n", conn->server.fd);
         conn->server.fd = 0;
     }
     // remove from conn list
@@ -234,6 +237,7 @@ static int proxy_setup_listen() {
     }
     // set sock for incoming connections
     FD_SET(sock, &config.ready);
+	printf("listen to fd %d\n", sock);
     config.fd_max = sock + 1;
     // initialize address
     struct sockaddr_in proxy_addr;
@@ -293,6 +297,7 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     }
     // init server in conn
     FD_SET(sock, &config.ready);
+	printf("fdset: %d\n", sock);
     if (sock >= config.fd_max) {
         config.fd_max = sock + 1;
     }
@@ -370,12 +375,19 @@ static int handler_browser(proxy_conn_t *conn) {
         replace_uri_bitrate(buf, conn->bitrate);
         ret = send_data(conn->server.fd, buf, len - 1);
       char tmp_req[MAX_REQ_SIZE];
-      memmove(tmp_req, buf, len);
-      tmp_req[len] = '\0';
+      memmove(tmp_req, buf, len - 1);
+      tmp_req[len - 1] = '\0';
       printf("send chunk request: %s\n", tmp_req);
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
+		puts("-----------------REQ_F4M_MSG---------------");
+		int i = 0;
+		for (; i < recvlen; i++) {
+			printf("%c", conn->server.f4m_request[i]);
+		}
+		puts("");
+		puts("-----------------REQ_F4M_MSG---------------");
         ret = proxy_req_forward(conn);
     } else {
         ret = proxy_req_forward(conn);
@@ -641,7 +653,7 @@ static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
 }
 
 static int handle_resp_chunk(proxy_conn_t *conn) {
-  logout("send chunk response:\n %s\n", conn->server.response);
+  logout("send chunk response:\n%s\n", conn->server.response);
 //            logout("body:\n %s\n", conn->server.response_body);
   int kk = 0;
   while (kk < conn->server.request->content_length) {
@@ -653,7 +665,8 @@ static int handle_resp_chunk(proxy_conn_t *conn) {
 //    conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
-    ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
+    ret_2 = send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
+	printf("send chunk response ret_1 %d, ret_2 %d\n", ret_1, ret_2);
     if (ret_1 < 0 || ret_2 < 0) {
         return -1;
     }
