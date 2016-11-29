@@ -368,7 +368,7 @@ static int handler_browser(proxy_conn_t *conn) {
         int len = construct_http_req(buf, conn->browser.request);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
-        ret = send_data(conn->server.fd, buf, len);
+        ret = send_data(conn->server.fd, buf, len - 1);
       char tmp_req[MAX_REQ_SIZE];
       memmove(tmp_req, buf, len);
       tmp_req[len] = '\0';
