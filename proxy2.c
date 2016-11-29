@@ -129,6 +129,9 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     if (browser_sock >= config.fd_max) {
         config.fd_max = browser_sock + 1;
     }
+    // save ip
+    char *ip = inet_ntoa(browser_addr.sin_addr);
+    strcpy(conn->browser.ip, ip);
     // insert to list
     proxy_insert_conn(conn);
     return 0;
@@ -579,14 +582,22 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long duration = t_finish - conn->t_s;
     unsigned long T = (double) chunk_size * 1000.0 * 8.0 / duration;
     unsigned long Tcurrent;
-	if (conn->T_curr == 0) {
-		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
-	} else {
-		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
-	}
+    ip_tpt_t *tpt = ip_tpt_find(conn->browser.ip);
+    if (!tpt) {
+        ip_tpt_add(conn->browser.ip, 0);
+    }
+//	if (conn->T_curr == 0) {
+//		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+//	} else {
+//		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+//	}
+    Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
+    Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
     //unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
 	printf("current throughput: %d\n", Tcurrent);
     conn->T_curr = (int) Tcurrent;
+    // save to history
+    ip_tpt_add(conn->browser.ip, Tcurrent);
     replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
     //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
     log_record(config.log, t_finish / 1000, duration / 1000.0, T, Tcurrent, conn->bitrate,
@@ -714,7 +725,7 @@ void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
     }
 }
 
-int ip_tpt_find(const char *ip) {
+ip_tpt_t* ip_tpt_find(const char *ip) {
     ip_tpt_t *curr = ip_tpt_list;
     while (curr != NULL) {
         if (strstr(curr->ip, ip)) {
@@ -722,17 +733,19 @@ int ip_tpt_find(const char *ip) {
         }
         curr = curr->next;
     }
-    if (curr) {
-        return curr->tpt;
-    }
-    return -1;
+    return curr;
 }
 
 void ip_tpt_add(const char *ip, unsigned long tpt) {
-    ip_tpt_t *new_tpt = malloc(sizeof(ip_tpt_t));
-    if (!new_tpt) {
-        return;
+    ip_tpt_t *target = ip_tpt_find(ip);
+    if (!target) {
+        ip_tpt_t *target = malloc(sizeof(ip_tpt_t));
+        if (!target) {
+            return;
+        }
+        target->next = ip_tpt_list;
+        ip_tpt_list = target;
+        strcpy(target->ip, ip);
     }
-    new_tpt->tpt = tpt;
-    strcpy(new_tpt->ip, ip);
+    target->tpt = tpt;
 }

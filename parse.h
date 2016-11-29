@@ -44,6 +44,7 @@ typedef struct browser {
                   // otherwise, change to appropriate bitrate
     int offset;
     char buf[MAX_REQ_SIZE];
+    char ip[50];
 } browser_t;
 
 typedef struct server {

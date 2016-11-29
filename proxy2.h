@@ -86,7 +86,7 @@ void proxy_remove_conn(proxy_conn_t *conn);
 
 void proxy_conn_init(proxy_conn_t *conn);
 
-int ip_tpt_find(const char *ip);
+ip_tpt_t* ip_tpt_find(const char *ip);
 
 void ip_tpt_add(const char *ip, unsigned long bitrate);
 
