@@ -325,6 +325,7 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 static int handler_browser(proxy_conn_t *conn) {
     // read from socket
     puts("handle browser");
+    int old_offset = conn->browser.offset;
     int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
                        MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
     if (recvlen < 0) {
@@ -364,6 +365,10 @@ static int handler_browser(proxy_conn_t *conn) {
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
         ret = send_data(conn->server.fd, buf, len);
+    } else if (conn->browser.type == REQ_F4M) {
+        // save f4m
+        memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
+        ret = proxy_req_forward(conn);
     } else {
         ret = proxy_req_forward(conn);
     }
