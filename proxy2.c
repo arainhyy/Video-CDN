@@ -206,6 +206,7 @@ int proxy_run() {
                 ready_num--;
             }
             if (!fd_flag) {
+                curr = curr->next;
                 continue;
             }
             int ret = proxy_handle_conn(curr, fd_flag);
@@ -352,7 +353,6 @@ static int handler_browser(proxy_conn_t *conn) {
 		puts("conn server fail");
         return -1;
     }
-	puts("conn server succ");
 	printf("req type: %d\n", conn->browser.type);
     // check whether it is chunk request, set flag
     int ret = -1;
@@ -361,16 +361,13 @@ static int handler_browser(proxy_conn_t *conn) {
           conn->bitrate_list = dup_bitrate_list(config.default_list);
         }
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
-        printf("selected bitrate: %d\n", conn->bitrate);
         conn->t_s = get_mill_time();
         // forward request directly
         char buf[MAX_REQ_SIZE] = {0};
         int len = construct_http_req(buf, conn->browser.request);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
-        printf("after replace: %s\n", buf);
         ret = send_data(conn->server.fd, buf, len);
-        printf("forward chunk req: %d\n", ret);
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
@@ -378,7 +375,6 @@ static int handler_browser(proxy_conn_t *conn) {
     } else {
         ret = proxy_req_forward(conn);
     }
-    printf("forward req result: %d\n", ret);
     // update state
     switch (conn->browser.type) {
         case REQ_HTML:
@@ -394,6 +390,7 @@ static int handler_browser(proxy_conn_t *conn) {
             return -1;
     }
     clear_parsed_request(conn, IS_BROWSER);
+    puts("end handle browser");
     return ret;
 }
 
@@ -408,7 +405,6 @@ static int handler_server(proxy_conn_t *conn) {
     }
     conn->server.offset += recvlen;
     int ret = 0;
-    printf("recvlen: %d offset:%d\n", recvlen, conn->server.offset);
     while (conn->server.offset > 0 && (conn->server.request == NULL || conn->server.request->status != NEEDMORE)
         && ret != -1) {
         // check if it has sent all content body of last request to client.
@@ -418,13 +414,12 @@ static int handler_server(proxy_conn_t *conn) {
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
             int old_len_body = strlen(conn->server.response_body);
-            printf("old len body:%d\n", old_len_body);
             memmove(conn->server.response_body + old_len_body, conn->server.buf, to_send);
             conn->server.response_body[old_len_body + to_send] = '\0';
             conn->server.to_send_length -= to_send;
             // Update buffer and offset.
             conn->server.offset -= to_send;
-            printf("after read body offset:%d\n", conn->server.offset);
+//            printf("after read body offset:%d\n", conn->server.offset);
             if (conn->server.offset > 0) {
                 memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
             }
@@ -434,19 +429,15 @@ static int handler_server(proxy_conn_t *conn) {
             puts("enter handle request");
             switch (conn->state) {
                 case HTML:
-                    puts("1");
                     ret = handle_resp_html(conn);
                     break;
                 case F4M_NOLIST:
-                  puts("2");
                     ret = handle_resp_f4m_nolist(conn);
                     break;
                 case F4M:
-                  puts("3");
                     ret = handle_resp_f4m(conn);
                     break;
                 case CHUNK:
-                  puts("4");
                     ret = handle_resp_chunk(conn);
                     break;
                 default:ret = -1;
@@ -489,18 +480,21 @@ static int handler_server(proxy_conn_t *conn) {
 
 // should init the conn before insert
 void proxy_insert_conn(proxy_conn_t *conn) {
+  printf("insert conn %d\n", conn->browser.fd);
     if (!conn) {
         return;
     }
     proxy_conn_t *temp = config.list_conn;
     config.list_conn = conn;
     conn->next = temp;
+    if (conn->next != NULL) printf("insert next: %d\n", conn->next->browser.fd);
     if (temp) {
         temp->prev = conn;
     }
 }
 
 void proxy_remove_conn(proxy_conn_t *conn) {
+    printf("remove conn %d\n", conn->browser.fd);
     if (!conn) {
         return;
     }
@@ -560,11 +554,9 @@ unsigned long get_mill_time() {
 }
 
 int proxy_req_forward(proxy_conn_t *conn) {
-    puts("forward request directly");
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.request);
-	puts("forward req");
 	puts(buf);
     return send_data(conn->server.fd, buf, len);
 }
@@ -589,7 +581,6 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
-	puts("send f4m nolist request");
     // 3. set state
     conn->state = F4M_NOLIST;
     return ret;
