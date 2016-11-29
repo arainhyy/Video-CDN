@@ -330,7 +330,7 @@ static int handler_browser(proxy_conn_t *conn) {
     int old_offset = conn->browser.offset;
     int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
                        MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
-    if (recvlen < 0) {
+    if (recvlen <= 0) {
         perror("handler_browser recv");
         return -1;
     }
@@ -401,7 +401,7 @@ static int handler_server(proxy_conn_t *conn) {
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
     if (recvlen <= 0) {
         perror("handler_server recv");
-        return recvlen;
+        return -1;
     }
     conn->server.offset += recvlen;
     int ret = 0;
