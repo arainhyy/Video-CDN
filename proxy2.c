@@ -403,15 +403,17 @@ static int handler_server(proxy_conn_t *conn) {
         // check if it has sent all content body of last request to client.
         if (conn->server.to_send_length > 0) {
             puts("enter read body");
+            printf("%d %d\n", conn->server.to_send_length, conn->server.offset);
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
-//        int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
             int old_len_body = strlen(conn->server.response_body);
+            printf("old len body:%d\n", old_len_body);
             memmove(conn->server.response_body + old_len_body, conn->server.buf, to_send);
             conn->server.response_body[old_len_body + to_send] = '\0';
             conn->server.to_send_length -= to_send;
             // Update buffer and offset.
             conn->server.offset -= to_send;
+            printf("after read body offset:%d\n", conn->server.offset);
             if (conn->server.offset > 0) {
                 memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
             }
@@ -453,9 +455,10 @@ static int handler_server(proxy_conn_t *conn) {
         }
         conn->server.to_send_length = conn->server.request->content_length;
         conn->server.response_body = malloc(sizeof(char) * (conn->server.to_send_length + 1));
-        conn->server.response_body = "";
+        conn->server.response_body[0] = '\0';
 
         conn->server.offset -= conn->server.request->position;
+        printf("after parse request offset:%d\n", conn->server.offset);
         // Store server response before clear server receiving buffer.
 
         memcpy(conn->server.response, conn->server.buf, conn->server.request->position);
