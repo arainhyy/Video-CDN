@@ -41,25 +41,22 @@ void log_init(const char *log_name) {
 //        perror("log_record");
 //    }
 //}
-void log_record(unsigned long time, float duration, unsigned long t_put, unsigned long avg_tput,
+void log_record(const char *log_name, unsigned long time, float duration, unsigned long t_put, unsigned long avg_tput,
                 int bitrate, const char *server_ip, const char *chunk_name) {
+    log_init(log_name);
     if (!log_fp) {
         return;
     }
 	puts("log content");
-    printf("%lu\n", time);
-    printf("%.6f\n", duration);
-    printf("%lu\n", t_put);
-    printf("%lu\n", avg_tput);
-    printf("%d\n", bitrate);
-    printf("%s\n", server_ip);
-    printf("%s\n", chunk_name);
     printf("%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
                       chunk_name);
     int ret = fprintf(log_fp, "%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
                       chunk_name);
     if (ret < 0) {
         perror("log_record");
+    }
+    if (log_fp != NULL) {
+        fclose(log_fp);
     }
 }
 

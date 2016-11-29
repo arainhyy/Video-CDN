@@ -105,7 +105,7 @@ void proxy_init_config(char **argv, int www_ip) {
     }
     config.list_conn = NULL;
     config.default_list = NULL;
-	log_init(config.log);
+//	log_init(config.log);
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
@@ -579,7 +579,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long T = (double) chunk_size * 1000.0 * 8.0 / duration;
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
-    log_record(t_finish / 1000000, duration / 1000000.0, T, Tcurrent, conn->bitrate,
+    log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
                config.www_ip_str, conn->server.chunk_name);
 }
 
