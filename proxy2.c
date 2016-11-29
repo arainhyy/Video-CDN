@@ -373,6 +373,7 @@ static int handler_browser(proxy_conn_t *conn) {
         // forward request directly
         char buf[MAX_REQ_SIZE] = {0};
         int len = construct_http_req(buf, conn->browser.request);
+        get_video_name(conn->browser.request->http_uri, conn->server.chunk_name);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
         ret = send_data(conn->server.fd, buf, len - 1);
@@ -579,7 +580,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
     log_record(t_finish / 1000000, duration / 1000000.0, T, Tcurrent, conn->bitrate,
-               config.www_ip_str, conn->browser.request->http_uri);
+               config.www_ip_str, conn->server.chunk_name);
 }
 
 /* Get timestamp in milliseconds. */

@@ -22,4 +22,6 @@ void log_close();
 
 int construct_http_req(char *buf, Request *req);
 
+int get_video_name(const char* uri, char* video_name);
+
 #endif /* !__HELPER_H__ */

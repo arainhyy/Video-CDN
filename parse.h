@@ -58,6 +58,7 @@ typedef struct server {
     char f4m_request[MAX_REQ_SIZE];
     char* response_body;
     char response[MAX_REQ_SIZE];
+    char chunk_name[MAX_PATH_LEN];
 } server_t;
 
 Request *parse(char *buffer, int size);

@@ -47,6 +47,13 @@ void log_record(unsigned long time, float duration, unsigned long t_put, unsigne
         return;
     }
 	puts("log content");
+    printf("%lu\n", time);
+    printf("%.6f\n", duration);
+    printf("%lu\n", t_put);
+    printf("%lu\n", avg_tput);
+    printf("%d\n", bitrate);
+    printf("%s\n", server_ip);
+    printf("%s\n", chunk_name);
     printf("%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
                       chunk_name);
     int ret = fprintf(log_fp, "%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
@@ -85,4 +92,8 @@ int construct_http_req(char *buf, Request *req) {
     }
     strcat(buf, crlf);
     return strlen(buf);
+}
+
+int get_video_name(const char* uri, char* video_name) {
+    strcpy(video_name, uri);
 }
