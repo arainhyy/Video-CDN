@@ -47,6 +47,13 @@ typedef struct proxy_config {
 } proxy_config_t;
 
 
+typedef struct ip_tpt {
+    char ip[50];
+    unsigned long tpt;
+    struct ip_tpt *next;
+} ip_tpt_t;
+
+
 /*
 struct sockaddr_in myaddr;
 int s;
@@ -78,5 +85,9 @@ void proxy_insert_conn(proxy_conn_t *conn);
 void proxy_remove_conn(proxy_conn_t *conn);
 
 void proxy_conn_init(proxy_conn_t *conn);
+
+int ip_tpt_find(const char *ip);
+
+void ip_tpt_add(const char *ip, unsigned long bitrate);
 
 #endif /* !__PROXY_H__ */

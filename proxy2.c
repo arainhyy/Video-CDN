@@ -17,6 +17,7 @@
 /** Static global configuration */
 //static proxy_config_t config;
 proxy_config_t config; // make it available for testing
+ip_tpt_t *ip_tpt_list = NULL;
 
 unsigned long get_mill_time();
 /**
@@ -711,4 +712,27 @@ void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
         free(conn->server.request);
         conn->server.request = NULL;
     }
+}
+
+int ip_tpt_find(const char *ip) {
+    ip_tpt_t *curr = ip_tpt_list;
+    while (curr != NULL) {
+        if (strstr(curr->ip, ip)) {
+            break;
+        }
+        curr = curr->next;
+    }
+    if (curr) {
+        return curr->tpt;
+    }
+    return -1;
+}
+
+void ip_tpt_add(const char *ip, unsigned long tpt) {
+    ip_tpt_t *new_tpt = malloc(sizeof(ip_tpt_t));
+    if (!new_tpt) {
+        return;
+    }
+    new_tpt->tpt = tpt;
+    strcpy(new_tpt->ip, ip);
 }
