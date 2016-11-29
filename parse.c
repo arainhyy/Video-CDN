@@ -125,7 +125,6 @@ int replace_uri_bitrate(char *request, int bitrate) {
     }
     pt = left;
     while (*pt != '/') {
-        printf("%c ", *pt);
         pt--;
     }
     *pt = '\0';
@@ -187,6 +186,7 @@ Request *parse_reponse(char *buffer, int size) {
     request->content_length = 0;
     request->content_readed = 0;
     request->position = i;
+
     request->headers = NULL;
     strcpy(request->http_uri, "");
     strcpy(request->http_method, "");

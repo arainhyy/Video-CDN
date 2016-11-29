@@ -131,6 +131,7 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
 }
 
 void proxy_conn_close(proxy_conn_t *conn) {
+    printf("remove conn %d\n", conn->browser.fd);
     // close sockets, browser, server
     if (conn->browser.fd != 0) {
         close(conn->browser.fd);
@@ -326,7 +327,7 @@ static int proxy_handle_conn(proxy_conn_t *conn, int fd_flag) {
 
 static int handler_browser(proxy_conn_t *conn) {
     // read from socket
-    puts("handle browser");
+    printf("*********************** handle browser: %d server:%d\n", conn->browser.fd, conn->server.fd);
     int old_offset = conn->browser.offset;
     int recvlen = recv(conn->browser.fd, conn->browser.buf + conn->browser.offset,
                        MAX_REQ_SIZE - conn->browser.offset, MSG_DONTWAIT);
@@ -368,6 +369,10 @@ static int handler_browser(proxy_conn_t *conn) {
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
         ret = send_data(conn->server.fd, buf, len);
+      char tmp_req[MAX_REQ_SIZE];
+      memmove(tmp_req, buf, len);
+      tmp_req[len] = '\0';
+      printf("send chunk request: %s\n", tmp_req);
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
@@ -378,12 +383,15 @@ static int handler_browser(proxy_conn_t *conn) {
     // update state
     switch (conn->browser.type) {
         case REQ_HTML:
+            puts("----------------REQ_HTML-----------------");
             conn->state = HTML;
             break;
         case REQ_F4M:
+            puts("----------------REQ_F4M-----------------");
             conn->state = F4M;
             break;
         case REQ_CHUNK:
+            puts("----------------REQ_CHUNK-----------------");
             conn->state = CHUNK;
             break;
         default:
@@ -396,7 +404,7 @@ static int handler_browser(proxy_conn_t *conn) {
 
 static int handler_server(proxy_conn_t *conn) {
     // read from socket
-    puts("handle server");
+    printf("*********************** handle server: %d browser: %d\n", conn->server.fd, conn->browser.fd);
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
     if (recvlen <= 0) {
@@ -404,6 +412,7 @@ static int handler_server(proxy_conn_t *conn) {
         return -1;
     }
     conn->server.offset += recvlen;
+    printf("recvlen: %d offset: %d\n", recvlen, conn->server.offset);
     int ret = 0;
     while (conn->server.offset > 0 && (conn->server.request == NULL || conn->server.request->status != NEEDMORE)
         && ret != -1) {
@@ -413,7 +422,7 @@ static int handler_server(proxy_conn_t *conn) {
             printf("%d %d\n", conn->server.to_send_length, conn->server.offset);
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
-            int old_len_body = strlen(conn->server.response_body);
+            int old_len_body = conn->server.request->content_length - conn->server.to_send_length;
             memmove(conn->server.response_body + old_len_body, conn->server.buf, to_send);
             conn->server.response_body[old_len_body + to_send] = '\0';
             conn->server.to_send_length -= to_send;
@@ -427,17 +436,30 @@ static int handler_server(proxy_conn_t *conn) {
         }
         if (conn->server.request != NULL && conn->server.request->status != NEEDMORE && conn->server.to_send_length == 0) {
             puts("enter handle request");
+
+            logout("header:\n %s\n", conn->server.response);
+//            logout("body:\n %s\n", conn->server.response_body);
+            int kk = 0;
+            while (kk < conn->server.request->content_length) {
+              logout("%c", conn->server.response_body[kk++]);
+            }
+            logout("\n");
+
             switch (conn->state) {
                 case HTML:
+                    puts("----------------RESP_HTML-----------------");
                     ret = handle_resp_html(conn);
                     break;
                 case F4M_NOLIST:
+                    puts("----------------RESP_NOLIST-----------------");
                     ret = handle_resp_f4m_nolist(conn);
                     break;
                 case F4M:
+                    puts("----------------RESP_F4M-----------------");
                     ret = handle_resp_f4m(conn);
                     break;
                 case CHUNK:
+                    puts("----------------RESP_CHUNK-----------------");
                     ret = handle_resp_chunk(conn);
                     break;
                 default:ret = -1;
@@ -456,7 +478,9 @@ static int handler_server(proxy_conn_t *conn) {
         conn->server.request = parse_reponse(conn->server.buf, recvlen);
         printf("parse response result: %d\n", conn->server.request->status);
         if (conn->server.request->status < 0) {
-            printf("Incomplete request---------------\n");
+            printf("Incomplete request---------------%d\n", conn->server.offset);
+            printf("to send length: %d\n", conn->server.to_send_length);
+            printf("%s\n", conn->server.buf);
             return ret;
         }
         conn->server.to_send_length = conn->server.request->content_length;
@@ -494,7 +518,6 @@ void proxy_insert_conn(proxy_conn_t *conn) {
 }
 
 void proxy_remove_conn(proxy_conn_t *conn) {
-    printf("remove conn %d\n", conn->browser.fd);
     if (!conn) {
         return;
     }
@@ -557,13 +580,24 @@ int proxy_req_forward(proxy_conn_t *conn) {
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.request);
-	puts(buf);
+  char tmp_req[MAX_REQ_SIZE];
+  memmove(tmp_req, buf, len);
+  tmp_req[len] = '\0';
+  printf("send non chunk request: %s\n", tmp_req);
     return send_data(conn->server.fd, buf, len);
 }
 
 static int handle_resp_html(proxy_conn_t *conn) {
     // forward response directly
     int ret_1 = 0, ret_2 = 0;
+  logout("send html response:\n %s\n", conn->server.response);
+//            logout("body:\n %s\n", conn->server.response_body);
+  int kk = 0;
+  while (kk < conn->server.request->content_length) {
+    logout("%c", conn->server.response_body[kk++]);
+  }
+  logout("\n");
+
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
     ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
     if (ret_1 < 0 || ret_2 < 0) {
@@ -580,6 +614,7 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
     }
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
+    logout("send_nolist_f4m_request: %s\n", conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
     // 3. set state
     conn->state = F4M_NOLIST;
@@ -587,6 +622,14 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
 }
 
 static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
+  logout("send nolist response:\n %s\n", conn->server.response);
+//            logout("body:\n %s\n", conn->server.response_body);
+  int kk = 0;
+  while (kk < conn->server.request->content_length) {
+    logout("%c", conn->server.response_body[kk++]);
+  }
+  logout("\n");
+
     // forward response directly
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
@@ -598,6 +641,14 @@ static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
 }
 
 static int handle_resp_chunk(proxy_conn_t *conn) {
+  logout("send chunk response:\n %s\n", conn->server.response);
+//            logout("body:\n %s\n", conn->server.response_body);
+  int kk = 0;
+  while (kk < conn->server.request->content_length) {
+    logout("%c", conn->server.response_body[kk++]);
+  }
+  logout("\n");
+
     estimate_throughput(conn, conn->server.request->content_length);
 //    conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     int ret_1 = 0, ret_2 = 0;
