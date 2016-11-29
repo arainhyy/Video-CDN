@@ -11,7 +11,8 @@ void sorted_insert_bitrate(int bitrate_num, bitrate** head);
 int select_bitrate(bitrate* head, float tpt) {
   bitrate* pt = head;
   bitrate* pre = NULL;
-  float upbound = tpt / 1.5;
+  float upbound = tpt / 1.5 * 1000;
+  printf("upbound: %f\n", upbound);
   while (pt != NULL) {
     if (pt->bitrate <= upbound) {
       pre = pt;

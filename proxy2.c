@@ -577,10 +577,18 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     // Exchange T to Kbps.
     unsigned long duration = t_finish - conn->t_s;
     unsigned long T = (double) chunk_size * 1000.0 * 8.0 / duration;
-    unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+    unsigned long Tcurrent;
+	if (conn->T_curr == 0) {
+		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+	} else {
+		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+	}
+    //unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
+	printf("current throughput: %d\n", Tcurrent);
     conn->T_curr = (int) Tcurrent;
     replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
-    log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
+    //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
+    log_record(config.log, t_finish / 1000, duration / 1000.0, T, Tcurrent, conn->bitrate,
                config.www_ip_str, conn->server.chunk_name);
 }
 
