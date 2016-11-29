@@ -25,7 +25,7 @@ int send_data(int fd, char *buf, int len) {
 }
 
 void log_init(const char *log_name) {
-    log_fp = fopen(log_name, "w+");
+    log_fp = fopen(log_name, "a+");
     if (!log_fp) {
         perror("log_init");
     }
