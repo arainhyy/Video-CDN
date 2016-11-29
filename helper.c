@@ -46,6 +46,9 @@ void log_record(unsigned long time, float duration, unsigned long t_put, unsigne
     if (!log_fp) {
         return;
     }
+	puts("log content");
+    printf("%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
+                      chunk_name);
     int ret = fprintf(log_fp, "%lu %.6f %lu %lu %d %s %s\n", time, duration, t_put, avg_tput, bitrate, server_ip,
                       chunk_name);
     if (ret < 0) {

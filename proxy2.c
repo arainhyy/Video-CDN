@@ -99,11 +99,13 @@ void proxy_init_config(char **argv, int www_ip) {
     config.dns_port = atoi(argv[6]);
     config.www_ip.s_addr = (long) -1;
     if (www_ip == 1) {
+		puts("has www_ip");
         inet_aton(argv[7], &config.www_ip);
         config.www_ip_str = argv[7];
     }
     config.list_conn = NULL;
     config.default_list = NULL;
+	log_init(config.log);
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
@@ -577,7 +579,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
     conn->T_curr = (int) Tcurrent;
     log_record(t_finish / 1000000, duration / 1000000.0, T, Tcurrent, conn->bitrate,
-               inet_ntoa(config.www_ip), conn->browser.request->http_uri);
+               config.www_ip_str, conn->browser.request->http_uri);
 }
 
 /* Get timestamp in milliseconds. */
