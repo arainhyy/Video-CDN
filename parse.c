@@ -119,14 +119,15 @@ int replace_f4m_to_nolist(char *f4m_request) {
  */
 int replace_uri_bitrate(char *request, int bitrate) {
     char *pt = NULL;
-    if ((pt = strcasestr(request, " HTTP")) == NULL) {
-        return IS_NOT_FRAGMENT_REQUEST;
-    }
     char *left = NULL;
-    if ((left = strcasestr(request, "seg")) == NULL) {
+    if ((left = strstr(request, "Seg")) == NULL) {
         return IS_NOT_FRAGMENT_REQUEST;
     }
-    while (*pt != '/') pt--;
+    pt = left;
+    while (*pt != '/') {
+        printf("%c ", *pt);
+        pt--;
+    }
     *pt = '\0';
     char new_request[MAX_REQ_SIZE];
     snprintf(new_request, MAX_REQ_SIZE, "%s/%d%s", request, bitrate, left);

@@ -368,7 +368,7 @@ static int handler_browser(proxy_conn_t *conn) {
         int len = construct_http_req(buf, conn->browser.request);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
-        printf("%s\n", buf);
+        printf("after replace: %s\n", buf);
         ret = send_data(conn->server.fd, buf, len);
         printf("forward chunk req: %d\n", ret);
     } else if (conn->browser.type == REQ_F4M) {
