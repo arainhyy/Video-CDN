@@ -133,3 +133,76 @@ int replace_uri_bitrate(char *request, int bitrate) {
     strcpy(request, new_request);
     return IS_FRAGMENT_REQUEST;
 }
+
+
+
+Request *parse_reponse(char *buffer, int size) {
+    puts("enter parse");
+    //Differant states in the state machine
+    enum {
+        STATE_START = 0, STATE_CR, STATE_CRLF, STATE_CRLFCR, STATE_CRLFCRLF
+    };
+
+    int i = 0, state;
+    size_t offset = 0;
+    char ch;
+    char buf[8192];
+    memset(buf, 0, 8192);
+    state = STATE_START;
+    while (state != STATE_CRLFCRLF) {
+        char expected = 0;
+
+        if (i == size)
+            break;
+
+        ch = buffer[i++];
+        buf[offset++] = ch;
+
+        switch (state) {
+            case STATE_START:
+            case STATE_CRLF:
+                expected = '\r';
+                break;
+            case STATE_CR:
+            case STATE_CRLFCR:
+                expected = '\n';
+                break;
+            default:
+                state = STATE_START;
+                continue;
+        }
+
+        if (ch == expected)
+            state++;
+        else
+            state = STATE_START;
+    }
+    Request *request = (Request *) malloc(sizeof(Request));
+    if (!request) {
+        perror("parse malloc");
+        return NULL;
+    }
+    request->header_count = 0;
+    request->content_length = 0;
+    request->content_readed = 0;
+    request->position = i;
+    request->headers = NULL;
+    strcpy(request->http_uri, "");
+    strcpy(request->http_method, "");
+    strcpy(request->http_uri, "");
+    // Valid End State
+    if (state == STATE_CRLFCRLF) {
+        char content_len[50] = {0};
+        char *cl_start = strcasestr(buf, "content-length: ");
+        cl_start += 16;
+        char *cl_end = strcasestr(cl_start, "\r\n");
+        strncpy(content_len, cl_start, (cl_end - cl_start));
+        content_len[(cl_end - cl_start)] = '\0';
+        request->content_length = atoi(content_len);
+        request->status = SUCCESS;
+    } else {
+        request->status = NEEDMORE;
+    }
+    // Handle Malformed Requests
+    return request;
+}

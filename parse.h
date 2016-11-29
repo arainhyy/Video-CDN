@@ -56,10 +56,13 @@ typedef struct server {
     char buf[MAX_REQ_SIZE];
     int to_send_length;
     char f4m_request[MAX_REQ_SIZE];
-    int response_complete;
+    char* response_body;
+    char response[MAX_REQ_SIZE];
 } server_t;
 
 Request *parse(char *buffer, int size);
+
+Request *parse_reponse(char *buffer, int size);
 
 // parse browser request, get type of request
 int browser_parse_request(browser_t *req);

@@ -18,6 +18,7 @@
 //static proxy_config_t config;
 proxy_config_t config; // make it available for testing
 
+unsigned long get_mill_time();
 /**
  * @brief Setup proxy til listen stage.
  *
@@ -64,12 +65,11 @@ static int browser_f4m(proxy_conn_t *conn);
 
 static int browser_chunk(proxy_conn_t *conn);
 
-static int handle_resp_html(proxy_conn_t *conn, const char *response);
+static int handle_resp_html(proxy_conn_t *conn);
 
-static int handle_resp_f4m(proxy_conn_t *conn, const char *response);
+static int handle_resp_f4m(proxy_conn_t *conn);
 
-static int handle_resp_chunk(proxy_conn_t *conn, const char *response);
-
+static int handle_resp_chunk(proxy_conn_t *conn);
 
 int handle_server(proxy_conn_t *conn);
 
@@ -294,6 +294,11 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     conn->server.fd = sock;
     conn->server.request = NULL;
     conn->server.type = -1;
+    conn->server.offset = 0;
+    conn->server.to_send_length = 0;
+    conn->server.f4m_request[0] = '\0';
+    conn->server.response_body = NULL;
+    conn->server.response[0] = '\0';
     return sock;
 }
 
@@ -350,6 +355,7 @@ static int handler_browser(proxy_conn_t *conn) {
     if (conn->browser.type == REQ_CHUNK) {
         printf("forward chunk req: %d\n", ret);
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
+        conn->t_s = get_mill_time();
         // forward request directly
         char buf[MAX_REQ_SIZE] = {0};
         int len = construct_http_req(buf, conn->browser.request);
@@ -383,84 +389,75 @@ static int handler_server(proxy_conn_t *conn) {
     puts("handle server");
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
-	puts("response:");
-	//puts(conn->server.buf + conn->server.offset);
     if (recvlen < 0) {
         perror("handler_server recv");
         return -1;
     }
     conn->server.offset += recvlen;
-    // check if it has sent all content body of last request to client.
-    if (conn->server.to_send_length > 0) {
-        int to_send = conn->server.to_send_length > conn->server.offset ?
-                      conn->server.offset : conn->server.to_send_length;
-        int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
-        conn->server.to_send_length -= send_ret;
-        if (conn->server.to_send_length == 0) {
-            estimate_throughput(conn, conn->server.request->content_length);
-            clear_parsed_request(conn, IS_SERVER);
+    int ret = 0;
+    while (conn->server.offset > 0 && conn->server.request->status != NEEDMORE && ret != -1) {
+        // check if it has sent all content body of last request to client.
+        if (conn->server.to_send_length > 0) {
+            int to_send = conn->server.to_send_length > conn->server.offset ?
+                          conn->server.offset : conn->server.to_send_length;
+//        int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
+            int old_len_body = strlen(conn->server.response_body);
+            memmove(conn->server.response_body + old_len_body, conn->server.buf, to_send);
+            conn->server.response_body[old_len_body + to_send] = '\0';
+            conn->server.to_send_length -= to_send;
+            // Update buffer and offset.
+            conn->server.offset -= to_send;
+            if (conn->server.offset > 0) {
+                memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
+            }
         }
-        return 0;
-    }
-    // parse request
-	char *resp_body = strcasestr(conn->server.buf, "\r\n\r\n");
-	puts("resp body:");
-	//puts(resp_body + 4);
-	char content_len[50] = {0};
-	char *cl_start = strcasestr(conn->server.buf, "content-length: ");
-	cl_start += 16;
-	char *cl_end = strcasestr(cl_start, "\r\n");
-	//printf("start %p, end %p, val %s\n", cl_start, cl_end, cl_start);
-	printf("pt diff: %d\n", cl_end - cl_start);
-	strncpy(content_len, cl_start, (cl_end - cl_start));
-	content_len[(cl_end - cl_start)] = '\0';
-	printf("content-len: %d, %s\n", atoi(content_len), content_len);
+        if (conn->server.request != NULL && conn->server.request->status != NEEDMORE && conn->server.to_send_length == 0) {
+            switch (conn->state) {
+                case HTML:
+                    ret = handle_resp_html(conn);
+                    break;
+                case F4M_NOLIST:
+                    ret = handle_resp_html(conn);
+                    break;
+                case F4M:
+                    ret = handle_resp_f4m(conn);
+                    break;
+                case CHUNK:
+                    ret = handle_resp_chunk(conn);
+                    break;
+                default:ret = -1;
+            }
+//            estimate_throughput(conn, conn->server.request->content_length);
+            free(conn->server.request);
+            conn->server.request = NULL;
+        }
 
-    //conn->server.request = parse(conn->server.buf, recvlen);
-    //conn->server.to_send_length = conn->server.request->content_length;
-    //if (conn->server.request->status < 0) {
-    //    printf("Incomplete request---------------\n");
-    //    return 0;
-    //}
-    //conn->server.offset -= conn->server.request->position;
-    // Store server response before clear server receiving buffer.
-    char response[MAX_REQ_SIZE];
-    //memcpy(response, conn->server.buf, conn->server.request->position);
-    //response[conn->server.request->position] = '\0';
-	memcpy(response, resp_body + 4, atoi(content_len));
-	response[atoi(content_len)] = '\0';
-	puts("processed response");
-	puts(response);
-    //if (conn->server.offset > 0) {
-    //    memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
-    //            conn->server.offset);
-    //}
-    // check request type
-    // TODO: differentiate request and response types
-    //conn->server.type = check_type(conn->server.request);
-    int ret = -1;
-    switch (conn->state) {
-        case HTML:
-            break;
-        case F4M_NOLIST:
-            // handle html
-			puts("handle f4m nolist response");
-            break;
-        case F4M:
-            // handle f4m
-			puts("handle f4m response");
-            ret = handle_resp_f4m(conn, response);
-            break;
-        case CHUNK:
-            // handle chunk
-            // modify to adapt to bitrate
-            ret = handle_resp_chunk(conn, response);
-            break;
-        default:
-            ret = -1;
+        if (conn->server.offset <= 0) break;
+        // parse request.
+        conn->server.request = parse_reponse(conn->server.buf, recvlen);
+        if (conn->server.request->status < 0) {
+            printf("Incomplete request---------------\n");
+            return 0;
+        }
+        conn->server.to_send_length = conn->server.request->content_length;
+        conn->server.response_body = malloc(sizeof(char) * (conn->server.to_send_length + 1));
+        conn->server.response_body = "";
+
+        conn->server.offset -= conn->server.request->position;
+        // Store server response before clear server receiving buffer.
+
+        memcpy(conn->server.response, conn->server.buf, conn->server.request->position);
+        conn->server.response[conn->server.request->position] = '\0';
+        if (conn->server.offset > 0) {
+            memmove(conn->server.buf, conn->server.buf + conn->server.request->position,
+                    conn->server.offset);
+        }
     }
     return ret;
 }
+
+
+
 
 // should init the conn before insert
 void proxy_insert_conn(proxy_conn_t *conn) {
@@ -544,14 +541,20 @@ int proxy_req_forward(proxy_conn_t *conn) {
     return send_data(conn->server.fd, buf, len);
 }
 
-static int handle_resp_html(proxy_conn_t *conn, const char *response) {
+static int handle_resp_html(proxy_conn_t *conn) {
     // forward response directly
-    return send_data(conn->browser.fd, response, strlen(response));
+    int ret_1 = 0, ret_2 = 0;
+    ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
+    ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
+    if (ret_1 < 0 || ret_2 < 0) {
+        return -1;
+    }
+    return ret_1 + ret_2;
 }
 
-static int handle_resp_f4m(proxy_conn_t *conn, const char *response) {
+static int handle_resp_f4m(proxy_conn_t *conn) {
     // 1. parse xml and get list of bitrates
-    conn->bitrate_list = parse_xml_to_list(conn->server.request->post_body);
+    conn->bitrate_list = parse_xml_to_list(conn->server.response_body);
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
@@ -563,19 +566,25 @@ static int handle_resp_f4m(proxy_conn_t *conn, const char *response) {
 
 static int handle_resp_f4m_nolist(proxy_conn_t *conn, const char *response) {
     // forward response directly
-    int ret = send_data(conn->browser.fd, response, strlen(response));
-    return ret;
+    int ret_1 = 0, ret_2 = 0;
+    ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
+    ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
+    if (ret_1 < 0 || ret_2 < 0) {
+        return -1;
+    }
+    return ret_1 + ret_2;
 }
 
-static int handle_resp_chunk(proxy_conn_t *conn, const char *response) {
-    // 1. calculate and update throughput
-    float t_old = conn->T_curr;
-    float t_est;
-    // estimate_throughput(conn, conn->server.) // TODO
-    // 2. forward response
-    send_data(conn->browser.fd, response, strlen(response));
-    // 3. log to file
-    //log_record(get_mill_time() / 1000, ); // TODO
+static int handle_resp_chunk(proxy_conn_t *conn) {
+    estimate_throughput(conn, conn->server.request->content_length);
+//    conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
+    int ret_1 = 0, ret_2 = 0;
+    ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
+    ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
+    if (ret_1 < 0 || ret_2 < 0) {
+        return -1;
+    }
+    return ret_1 + ret_2;
 }
 
 /**
