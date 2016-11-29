@@ -49,6 +49,26 @@ bitrate* parse_xml_to_list(char* buf) {
   return head;
 }
 
+bitrate* dup_bitrate_list(bitrate *list) {
+  bitrate* head = NULL;
+  bitrate* pt = list;
+  bitrate* pre = NULL;
+
+  while (pt != NULL) {
+    bitrate* new_node = (bitrate*) malloc(sizeof(bitrate));
+    new_node->bitrate = pt->bitrate;
+    new_node->next = NULL;
+    if (pre == NULL) {
+      head = new_node;
+    } else {
+      pre->next = new_node;
+    }
+    pre = new_node;
+    pt = pt->next;
+  }
+  return head;
+}
+
 void sorted_insert_bitrate(int bitrate_num, bitrate** head) {
   bitrate* new_node = (bitrate*) malloc(sizeof(bitrate));
   new_node->bitrate = bitrate_num;

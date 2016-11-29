@@ -103,6 +103,7 @@ void proxy_init_config(char **argv, int www_ip) {
         config.www_ip_str = argv[7];
     }
     config.list_conn = NULL;
+    config.default_list = NULL;
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
@@ -356,15 +357,20 @@ static int handler_browser(proxy_conn_t *conn) {
     // check whether it is chunk request, set flag
     int ret = -1;
     if (conn->browser.type == REQ_CHUNK) {
-        printf("forward chunk req: %d\n", ret);
+        if (conn->bitrate_list == NULL) {
+          conn->bitrate_list = dup_bitrate_list(config.default_list);
+        }
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
+        printf("selected bitrate: %d\n", conn->bitrate);
         conn->t_s = get_mill_time();
         // forward request directly
         char buf[MAX_REQ_SIZE] = {0};
         int len = construct_http_req(buf, conn->browser.request);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
+        printf("%s\n", buf);
         ret = send_data(conn->server.fd, buf, len);
+        printf("forward chunk req: %d\n", ret);
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
@@ -428,15 +434,19 @@ static int handler_server(proxy_conn_t *conn) {
             puts("enter handle request");
             switch (conn->state) {
                 case HTML:
+                    puts("1");
                     ret = handle_resp_html(conn);
                     break;
                 case F4M_NOLIST:
+                  puts("2");
                     ret = handle_resp_f4m_nolist(conn);
                     break;
                 case F4M:
+                  puts("3");
                     ret = handle_resp_f4m(conn);
                     break;
                 case CHUNK:
+                  puts("4");
                     ret = handle_resp_chunk(conn);
                     break;
                 default:ret = -1;
@@ -573,6 +583,9 @@ static int handle_resp_html(proxy_conn_t *conn) {
 static int handle_resp_f4m(proxy_conn_t *conn) {
     // 1. parse xml and get list of bitrates
     conn->bitrate_list = parse_xml_to_list(conn->server.response_body);
+    if (config.default_list == NULL) {
+      config.default_list = dup_bitrate_list(conn->bitrate_list);
+    }
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
