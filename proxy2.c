@@ -71,6 +71,8 @@ static int handle_resp_f4m(proxy_conn_t *conn);
 
 static int handle_resp_chunk(proxy_conn_t *conn);
 
+static int handle_resp_f4m_nolist(proxy_conn_t *conn);
+
 int handle_server(proxy_conn_t *conn);
 
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size);
@@ -389,15 +391,18 @@ static int handler_server(proxy_conn_t *conn) {
     puts("handle server");
     int recvlen = recv(conn->server.fd, conn->server.buf + conn->server.offset,
                        MAX_REQ_SIZE - conn->server.offset, MSG_DONTWAIT);
-    if (recvlen < 0) {
+    if (recvlen <= 0) {
         perror("handler_server recv");
-        return -1;
+        return recvlen;
     }
     conn->server.offset += recvlen;
     int ret = 0;
-    while (conn->server.offset > 0 && conn->server.request->status != NEEDMORE && ret != -1) {
+    printf("recvlen: %d offset:%d\n", recvlen, conn->server.offset);
+    while (conn->server.offset > 0 && (conn->server.request == NULL || conn->server.request->status != NEEDMORE)
+        && ret != -1) {
         // check if it has sent all content body of last request to client.
         if (conn->server.to_send_length > 0) {
+            puts("enter read body");
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
 //        int send_ret = send_data(conn->browser.fd, conn->server.buf, to_send);
@@ -410,14 +415,16 @@ static int handler_server(proxy_conn_t *conn) {
             if (conn->server.offset > 0) {
                 memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
             }
+            puts("leave read body");
         }
         if (conn->server.request != NULL && conn->server.request->status != NEEDMORE && conn->server.to_send_length == 0) {
+            puts("enter handle request");
             switch (conn->state) {
                 case HTML:
                     ret = handle_resp_html(conn);
                     break;
                 case F4M_NOLIST:
-                    ret = handle_resp_html(conn);
+                    ret = handle_resp_f4m_nolist(conn);
                     break;
                 case F4M:
                     ret = handle_resp_f4m(conn);
@@ -427,17 +434,22 @@ static int handler_server(proxy_conn_t *conn) {
                     break;
                 default:ret = -1;
             }
-//            estimate_throughput(conn, conn->server.request->content_length);
+            if (conn->server.response_body != NULL) {
+                free(conn->server.response_body);
+                conn->server.response_body = NULL;
+            }
             free(conn->server.request);
             conn->server.request = NULL;
+            puts("leave handle request");
         }
 
         if (conn->server.offset <= 0) break;
         // parse request.
         conn->server.request = parse_reponse(conn->server.buf, recvlen);
+        printf("parse response result: %d\n", conn->server.request->status);
         if (conn->server.request->status < 0) {
             printf("Incomplete request---------------\n");
-            return 0;
+            return ret;
         }
         conn->server.to_send_length = conn->server.request->content_length;
         conn->server.response_body = malloc(sizeof(char) * (conn->server.to_send_length + 1));
@@ -453,11 +465,9 @@ static int handler_server(proxy_conn_t *conn) {
                     conn->server.offset);
         }
     }
+    puts("Finish handle server");
     return ret;
 }
-
-
-
 
 // should init the conn before insert
 void proxy_insert_conn(proxy_conn_t *conn) {
@@ -564,7 +574,7 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
     return ret;
 }
 
-static int handle_resp_f4m_nolist(proxy_conn_t *conn, const char *response) {
+static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
     // forward response directly
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));

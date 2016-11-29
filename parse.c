@@ -186,6 +186,7 @@ Request *parse_reponse(char *buffer, int size) {
     request->content_length = 0;
     request->content_readed = 0;
     request->position = i;
+    printf("position: %d\n", i);
     request->headers = NULL;
     strcpy(request->http_uri, "");
     strcpy(request->http_method, "");
@@ -193,7 +194,8 @@ Request *parse_reponse(char *buffer, int size) {
     // Valid End State
     if (state == STATE_CRLFCRLF) {
         char content_len[50] = {0};
-        char *cl_start = strcasestr(buf, "content-length: ");
+        char *cl_start = strcasestr(buffer, "content-length: ");
+        if (cl_start != NULL) printf("%d\n", cl_start - buf);
         cl_start += 16;
         char *cl_end = strcasestr(cl_start, "\r\n");
         strncpy(content_len, cl_start, (cl_end - cl_start));
