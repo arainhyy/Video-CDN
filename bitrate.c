@@ -8,7 +8,7 @@ void sorted_insert_bitrate(int bitrate_num, bitrate** head);
  * @param tpt Thoughput.
  * @return Bitrate to pick.
  */
-int select_bitrate(bitrate* head, float tpt) {
+int select_bitrate(bitrate* head, unsigned long tpt) {
   bitrate* pt = head;
   bitrate* pre = NULL;
   float upbound = tpt / 1.5 * 1000;

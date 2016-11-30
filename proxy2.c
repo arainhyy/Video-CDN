@@ -132,6 +132,11 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     // save ip
     char *ip = inet_ntoa(browser_addr.sin_addr);
     strcpy(conn->browser.ip, ip);
+    printf("-------browser.ip--%s\n", conn->browser.ip);
+    if (ip_tpt_find(conn->browser.ip) > 0) {
+      conn->T_curr = ip_tpt_find(conn->browser.ip);
+    }
+    printf("tcurr init:%d\n", conn->T_curr);
     // insert to list
     proxy_insert_conn(conn);
     return 0;
@@ -372,6 +377,7 @@ static int handler_browser(proxy_conn_t *conn) {
         if (conn->bitrate_list == NULL) {
           conn->bitrate_list = dup_bitrate_list(config.default_list);
         }
+        printf("tcurr before select: %lu\n", conn->T_curr);
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
         conn->t_s = get_mill_time();
         // forward request directly
@@ -380,7 +386,7 @@ static int handler_browser(proxy_conn_t *conn) {
         get_video_name(conn->browser.request->http_uri, conn->server.chunk_name);
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
-        ret = send_data(conn->server.fd, buf, len - 1);
+        ret = send_data(conn->server.fd, buf, len);
       char tmp_req[MAX_REQ_SIZE];
       memmove(tmp_req, buf, len - 1);
       tmp_req[len - 1] = '\0';
@@ -586,11 +592,6 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
     if (!tpt) {
         ip_tpt_add(conn->browser.ip, 0);
     }
-//	if (conn->T_curr == 0) {
-//		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
-//	} else {
-//		Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
-//	}
     Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
     Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
     //unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
@@ -737,9 +738,11 @@ ip_tpt_t* ip_tpt_find(const char *ip) {
 }
 
 void ip_tpt_add(const char *ip, unsigned long tpt) {
+    printf("update tpt: %s-%d\n", ip, tpt);
     ip_tpt_t *target = ip_tpt_find(ip);
     if (!target) {
-        ip_tpt_t *target = malloc(sizeof(ip_tpt_t));
+        printf("not found\n");
+        target = malloc(sizeof(ip_tpt_t));
         if (!target) {
             return;
         }

@@ -11,6 +11,6 @@ typedef struct _bitrate {
   struct _bitrate* next;
 } bitrate;
 
-int select_bitrate(bitrate* head, float tpt);
+int select_bitrate(bitrate* head, unsigned long tpt);
 bitrate* parse_xml_to_list(char* buf);
 bitrate* dup_bitrate_list(bitrate *list);
