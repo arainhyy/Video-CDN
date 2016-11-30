@@ -134,9 +134,9 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     strcpy(conn->browser.ip, ip);
     printf("-------browser.ip--%s\n", conn->browser.ip);
     if (ip_tpt_find(conn->browser.ip) > 0) {
-      conn->T_curr = ip_tpt_find(conn->browser.ip);
+      conn->T_curr = ip_tpt_find(conn->browser.ip)->tpt;
     }
-    printf("tcurr init:%d\n", conn->T_curr);
+    printf("tcurr init:%lu\n", conn->T_curr);
     // insert to list
     proxy_insert_conn(conn);
     return 0;
@@ -183,9 +183,7 @@ int proxy_run() {
     while (1) {
         // copy fd set for select
         fd_set ready = config.ready;
-        puts("before select");
         int ready_num = select(config.fd_max, &ready, NULL, NULL, NULL);
-        puts("after select");
         // error handling
         if (ready_num < 0) {
             perror("proxy_run");
@@ -377,7 +375,7 @@ static int handler_browser(proxy_conn_t *conn) {
         if (conn->bitrate_list == NULL) {
           conn->bitrate_list = dup_bitrate_list(config.default_list);
         }
-        printf("tcurr before select: %lu\n", conn->T_curr);
+        printf("tcurr %s before select: %lu\n", conn->browser.ip, conn->T_curr);
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
         conn->t_s = get_mill_time();
         // forward request directly
@@ -387,10 +385,6 @@ static int handler_browser(proxy_conn_t *conn) {
         // replace bitrate
         replace_uri_bitrate(buf, conn->bitrate);
         ret = send_data(conn->server.fd, buf, len);
-      char tmp_req[MAX_REQ_SIZE];
-      memmove(tmp_req, buf, len - 1);
-      tmp_req[len - 1] = '\0';
-      printf("send chunk request: %s\n", tmp_req);
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
@@ -437,14 +431,12 @@ static int handler_server(proxy_conn_t *conn) {
         return -1;
     }
     conn->server.offset += recvlen;
-    printf("recvlen: %d offset: %d\n", recvlen, conn->server.offset);
     int ret = 0;
     while (conn->server.offset > 0 && (conn->server.request == NULL || conn->server.request->status != NEEDMORE)
         && ret != -1) {
         // check if it has sent all content body of last request to client.
         if (conn->server.to_send_length > 0) {
             puts("enter read body");
-            printf("%d %d\n", conn->server.to_send_length, conn->server.offset);
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
             int old_len_body = conn->server.request->content_length - conn->server.to_send_length;
@@ -461,14 +453,6 @@ static int handler_server(proxy_conn_t *conn) {
         }
         if (conn->server.request != NULL && conn->server.request->status != NEEDMORE && conn->server.to_send_length == 0) {
             puts("enter handle request");
-
-            logout("header:\n %s\n", conn->server.response);
-//            logout("body:\n %s\n", conn->server.response_body);
-            int kk = 0;
-            while (kk < conn->server.request->content_length) {
-              logout("%c", conn->server.response_body[kk++]);
-            }
-            logout("\n");
 
             switch (conn->state) {
                 case HTML:
@@ -501,11 +485,8 @@ static int handler_server(proxy_conn_t *conn) {
         if (conn->server.offset <= 0) break;
         // parse request.
         conn->server.request = parse_reponse(conn->server.buf, recvlen);
-        printf("parse response result: %d\n", conn->server.request->status);
         if (conn->server.request->status < 0) {
             printf("Incomplete request---------------%d\n", conn->server.offset);
-            printf("to send length: %d\n", conn->server.to_send_length);
-            printf("%s\n", conn->server.buf);
             return ret;
         }
         conn->server.to_send_length = conn->server.request->content_length;
@@ -513,7 +494,6 @@ static int handler_server(proxy_conn_t *conn) {
         conn->server.response_body[0] = '\0';
 
         conn->server.offset -= conn->server.request->position;
-        printf("after parse request offset:%d\n", conn->server.offset);
         // Store server response before clear server receiving buffer.
 
         memcpy(conn->server.response, conn->server.buf, conn->server.request->position);
@@ -581,28 +561,26 @@ unsigned long get_mill_time();
  * @param conn
  * @param chunk_size
  */
-//void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
-    unsigned long t_finish = get_mill_time();
-    // Exchange T to Kbps.
-    unsigned long duration = t_finish - conn->t_s;
-    unsigned long T = (double) chunk_size * 1000.0 * 8.0 / duration;
-    unsigned long Tcurrent;
-    ip_tpt_t *tpt = ip_tpt_find(conn->browser.ip);
-    if (!tpt) {
-        ip_tpt_add(conn->browser.ip, 0);
-    }
-    Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
-    Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
-    //unsigned long Tcurrent = config.alpha * T + (1.0 - config.alpha) * conn->T_curr;
-	printf("current throughput: %d\n", Tcurrent);
-    conn->T_curr = (int) Tcurrent;
-    // save to history
-    ip_tpt_add(conn->browser.ip, Tcurrent);
-    replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
-    //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
-    log_record(config.log, t_finish / 1000, duration / 1000.0, T, Tcurrent, conn->bitrate,
-               config.www_ip_str, conn->server.chunk_name);
+  unsigned long t_finish = get_mill_time();
+  // Exchange T to Kbps.
+  unsigned long duration = t_finish - conn->t_s;
+  float diff = duration / 1000.0;
+  unsigned long T = ((chunk_size / diff) / 1000) * 8;
+  unsigned long Tcurrent;
+  ip_tpt_t *tpt = ip_tpt_find(conn->browser.ip);
+  if (!tpt) {
+    ip_tpt_add(conn->browser.ip, 0);
+  }
+  Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
+  Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
+  conn->T_curr = (int) Tcurrent;
+  // save to history
+  ip_tpt_add(conn->browser.ip, Tcurrent);
+  replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
+  //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
+  log_record(config.log, t_finish / 1000, diff, T, Tcurrent, conn->bitrate,
+             config.www_ip_str, conn->server.chunk_name);
 }
 
 /* Get timestamp in milliseconds. */
@@ -627,13 +605,6 @@ int proxy_req_forward(proxy_conn_t *conn) {
 static int handle_resp_html(proxy_conn_t *conn) {
     // forward response directly
     int ret_1 = 0, ret_2 = 0;
-  logout("send html response:\n %s\n", conn->server.response);
-//            logout("body:\n %s\n", conn->server.response_body);
-  int kk = 0;
-  while (kk < conn->server.request->content_length) {
-    logout("%c", conn->server.response_body[kk++]);
-  }
-  logout("\n");
 
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
     ret_2 += send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
@@ -651,7 +622,6 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
     }
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
-    logout("send_nolist_f4m_request: %s\n", conn->server.f4m_request);
     int ret = send_data(conn->server.fd, conn->server.f4m_request, strlen(conn->server.f4m_request));
     // 3. set state
     conn->state = F4M_NOLIST;
@@ -659,14 +629,6 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
 }
 
 static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
-  logout("send nolist response:\n %s\n", conn->server.response);
-//            logout("body:\n %s\n", conn->server.response_body);
-  int kk = 0;
-  while (kk < conn->server.request->content_length) {
-    logout("%c", conn->server.response_body[kk++]);
-  }
-  logout("\n");
-
     // forward response directly
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
@@ -678,20 +640,11 @@ static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
 }
 
 static int handle_resp_chunk(proxy_conn_t *conn) {
-  logout("send chunk response:\n%s\n", conn->server.response);
-//            logout("body:\n %s\n", conn->server.response_body);
-  int kk = 0;
-  while (kk < conn->server.request->content_length) {
-    logout("%c", conn->server.response_body[kk++]);
-  }
-  logout("\n");
-
     estimate_throughput(conn, conn->server.request->content_length);
 //    conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
     ret_2 = send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
-	printf("send chunk response ret_1 %d, ret_2 %d\n", ret_1, ret_2);
     if (ret_1 < 0 || ret_2 < 0) {
         return -1;
     }
