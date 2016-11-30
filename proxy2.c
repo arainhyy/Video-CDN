@@ -414,7 +414,8 @@ static int handler_browser(proxy_conn_t *conn) {
             conn->state = CHUNK;
             break;
         default:
-            return -1;
+            conn->state = HTML;
+            break;
     }
     clear_parsed_request(conn, IS_BROWSER);
     puts("end handle browser");
