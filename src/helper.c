@@ -31,16 +31,6 @@ void log_init(const char *log_name) {
     }
 }
 
-//void log_record(int time, const char *client_ip,
-//                const char *query_name, const char *response_ip) {
-//    if (!log_fp) {
-//        return;
-//    }
-//    int ret = fprintf(log_fp, "%d %s %s %s\n", time, client_ip, query_name, response_ip);
-//    if (ret < 0) {
-//        perror("log_record");
-//    }
-//}
 void log_record(const char *log_name, unsigned long time, float duration, unsigned long t_put, unsigned long avg_tput,
                 int bitrate, const char *server_ip, const char *chunk_name) {
     log_init(log_name);
@@ -75,9 +65,7 @@ int construct_http_req(char *buf, Request *req) {
     strcat(buf, req->http_method); strcat(buf, space);
     strcat(buf, req->http_uri);    strcat(buf, space);
     strcat(buf, req->http_version);
-//    printf("1 len: %d\n", strlen(buf));
     strcat(buf, crlf);
-//    printf("2 len: %d\n", strlen(buf));
     // append list of header
     struct Request_header *header = req->headers;
     while (header) {

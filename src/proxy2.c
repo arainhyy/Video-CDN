@@ -446,7 +446,6 @@ static int handler_server(proxy_conn_t *conn) {
             conn->server.to_send_length -= to_send;
             // Update buffer and offset.
             conn->server.offset -= to_send;
-//            printf("after read body offset:%d\n", conn->server.offset);
             if (conn->server.offset > 0) {
                 memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
             }
@@ -510,14 +509,12 @@ static int handler_server(proxy_conn_t *conn) {
 
 // should init the conn before insert
 void proxy_insert_conn(proxy_conn_t *conn) {
-  printf("insert conn %d\n", conn->browser.fd);
     if (!conn) {
         return;
     }
     proxy_conn_t *temp = config.list_conn;
     config.list_conn = conn;
     conn->next = temp;
-    if (conn->next != NULL) printf("insert next: %d\n", conn->next->browser.fd);
     if (temp) {
         temp->prev = conn;
     }
