@@ -5,4 +5,5 @@
 #ifndef TEST_LOAD_BALANCE_H
 #define TEST_LOAD_BALANCE_H
 #include "parse.h"
+
 #endif //TEST_LOAD_BALANCE_H
