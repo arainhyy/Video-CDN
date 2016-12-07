@@ -10,8 +10,6 @@
 
 #define MAX_IP_LEN 36
 #define MAX_LINE_LEN 4096
-#define ALREADY_EXISTED 0
-#define NOT_ALREADY_EXISTED 1
 
 typedef struct _node {
   char ip[MAX_IP_LEN];

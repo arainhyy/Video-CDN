@@ -46,7 +46,7 @@ int parse_LSA_file(char* file_name) {
     }
 
     node* now = add_node_by_ip_with_num(node_ip, &nodes, &total_num);
-    if (exist_in_list(node_ip, &servers) == NULL) {
+    if (!exist_in_list(node_ip, &servers) && node_ip[0] != 'r') {
       add_node_by_ip_with_num(node_ip, &clients, &client_num);
     }
     if (seq_num > now->seq_num) {
@@ -61,8 +61,6 @@ int parse_LSA_file(char* file_name) {
         node* this_neighbor = exist_in_list(neighbor, &nodes);
         if (this_neighbor == NULL) {
           this_neighbor = add_node_by_ip_with_num(neighbor, &nodes, &total_num);
-          // If it can not find this node at this time, this node must be client because servers get parsed already.
-          add_node_by_ip_with_num(node_ip, &clients, &client_num);
         }
         now->neighbors[i] = this_neighbor;
         neighbor = strtok(NULL, ",");

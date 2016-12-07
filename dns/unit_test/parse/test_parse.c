@@ -22,8 +22,15 @@ static void test_parse_LSA_file(void **state) {
   assert_int_equal(ret, 0);
   assert_int_equal(server_num, 2);
   assert_int_equal(total_num, 7);
+  assert_int_equal(client_num, 2);
   assert_int_equal(nodes->seq_num, 9);
   int i = 0;
+
+  node* pt = clients;
+  while (pt) {
+    printf("client ip %s\n", pt->ip);
+    pt = pt->next;
+  }
   node* now = nodes;
   for (; i < 6; i++) {
     printf("node_id: %s\nneighbors:\n", now->ip);
