@@ -1,8 +1,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "dns_record.h"
-
-
+//#include <stdint.h>
+//#include <inttypes.h>
 
 
 void dns_header_init(dns_header_t *header, int id) {
@@ -65,6 +65,8 @@ int parse_name(const char *question, int size, char *result) {
         pt += lable_size;
         size -= lable_size;
     }
+    int len = strlen(result);
+    result[len - 1] = '\0';
     // test QTYPE and QCLASS
     return 0;
 }
@@ -76,16 +78,20 @@ int translate_name(const char *addr, char *result) {
         char curr_char = addr[total + label_len];
         if (curr_char != '.') {
             result[total + label_len + 1] = curr_char;
+//            printf("index %d, char %c\n", total + label_len + 1, curr_char);
         } else {
             result[total] = (char) label_len;
-            total += label_len;
-            label_len = 0;
+//            printf("index %d, num %d\n", total, label_len);
+            total += label_len + 1;
+            label_len = -1;
         }
         label_len++;
     }
     result[total] = (char) label_len;
+//    printf("index %d, num %d\n", total, label_len);
     total += label_len;
-    result[total] = '\0';
+//    printf("final index: %d\n", total);
+    result[total + 1] = '\0';
     return total;
 }
 
@@ -93,7 +99,7 @@ int translate_name(const char *addr, char *result) {
 int parse_question(const char *buf, int size, char *result) {
     int offset = 0;
     offset += parse_name(buf + offset, size - offset, result);
-    dns_question_t *question = buff + offset;
+    dns_question_t *question = buf + offset;
     // check QTYPE and QCLASS
     if (DNS_GET_QCLASS(question) != DNS_CLASS_IP) {
         return -1;
@@ -102,7 +108,7 @@ int parse_question(const char *buf, int size, char *result) {
         return -1;
     }
     // return zero
-    return offser + sizeof(dns_question_t);
+    return offset + sizeof(dns_question_t);
 }
 
 // parse a single answer item
@@ -110,7 +116,7 @@ int parse_resource(const char *buf, int size, struct in_addr *result) {
     int offset = 0;
     // ignore question name
     offset += parse_name(buf + offset, size - offset, NULL);
-    dns_resource_t *resource = buff + offset;
+    dns_resource_t *resource = buf + offset;
     // check QTYPE and QCLASS
     if (DNS_GET_TYPE(resource) != DNS_TYPE_A) {
         return -1;
@@ -124,7 +130,7 @@ int parse_resource(const char *buf, int size, struct in_addr *result) {
     }
     offset += sizeof(dns_resource_t);
     result->s_addr = ntohs(buf + offset);
-    return offser;
+    return offset;
 }
 
 int generate_question(const char *query, char *result) {
@@ -133,8 +139,8 @@ int generate_question(const char *query, char *result) {
         return -1;
     }
     dns_question_t question;
-    question.qclass = htons(DNS_TYPE_A);
-    question.qtype = htons(DNS_GET_QTYPE);
+    question.qclass = htons(DNS_CLASS_IP);
+    question.qtype = htons(DNS_TYPE_A);
     memcpy(result + offset, &question, sizeof(dns_question_t));
     ret += sizeof(dns_question_t);
     return ret;
@@ -147,15 +153,16 @@ int generate_resource(const char *query, const char *ip, char *result) {
     }
     dns_resource_t resource;
     resource.type = htons(DNS_TYPE_A);
-    resource.class = htons(DNS_CLASS_IP);
+    resource.class_name = htons(DNS_CLASS_IP);
     resource.ttl = htons(0);
     resource.rdlength = htons(sizeof(struct in_addr));
     memcpy(result + offset, &resource, sizeof(dns_resource_t));
     offset += sizeof(dns_resource_t);
     struct in_addr ip_addr_temp;
     inet_aton(ip, &ip_addr_temp);
-    memcpy(pkt, &ip_addr.s_addr, sizeof(struct in_addr));
-    return ret + offset + sizeof(struct in_addr);
+    offset += sizeof(struct in_addr);
+    memcpy(result + offset, &ip_addr_temp.s_addr, sizeof(struct in_addr));
+    return ret + offset;
 }
 
 int dns_isinvalid(dns_header_t *header, int is_request) {
@@ -211,7 +218,7 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
 // server part
 int dns_parse_request(const char *buf, int size, char *result) {
     // parse header
-    dns_header_t *header = response;
+    dns_header_t *header = result;
     // check whether response, if not then return negative
     if (dns_isinvalid(header, 1)) {
         return -1;
@@ -222,7 +229,7 @@ int dns_parse_request(const char *buf, int size, char *result) {
         return -1;
     }
     // parse the question
-    return parse_question(buf + offset);
+    return parse_question(buf + offset, size - offset, result + offset);
 }
 
 /*
@@ -256,7 +263,7 @@ int dns_parse_response(const char *response, int size, struct in_addr *result) {
         return -1;
     }
     while (qnum > 0) {
-        ret = parse_question(buf + offset, size - offset, NULL);
+        ret = parse_question(response + offset, size - offset, NULL);
         if (ret < 0) {
             break;
         }

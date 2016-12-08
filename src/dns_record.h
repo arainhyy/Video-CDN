@@ -2,6 +2,9 @@
 #define __DNS_RECORD_H__
 
 #include <stdint.h>
+//typedef unsigned short uint16_t;
+//typedef unsigned int uint32_t;
+
 
 // struct for the header section
 typedef struct dns_header {
@@ -24,7 +27,7 @@ typedef struct dns_resource {
     uint16_t type;
     uint16_t class_name;
     uint32_t ttl;
-    uint16 rdlength;
+    uint16_t rdlength;
 } dns_resource_t;
 
 #define DNS_MSG_MAX_LEN    (65535)
@@ -42,25 +45,25 @@ typedef struct dns_resource {
 #define DNS_SET_FLAG(header, flag) ({\
         uint16_t flags = ntohs(header->flags); \
         flags |= flag; \
-        header->flags = htons(flags);})
+        (header)->flags = htons(flags);})
 #define DNS_CLR_FLAG(header, flag) ({\
-        uint16_t flags = ntohs(header->flags); \
+        uint16_t flags = ntohs((header)->flags); \
         flags &= ~(flag); \
         header->flags = htons(flags);})
-#define DNS_CHECK_FLAG(request, mask) (ntohs(header->flags) & mask)
-#define DNS_GET_ID(header) (ntons(header->id))
-#define DNS_GET_QDCOUNT(header) (ntohs(header->qdcount)) // number of questions
-#define DNS_GET_ANCOUNT(header) (ntohs(header->ancount)) // number of answers
+#define DNS_CHECK_FLAG(request, mask) (ntohs((header)->flags) & mask)
+#define DNS_GET_ID(header) (ntohs((header)->id))
+#define DNS_GET_QDCOUNT(header) (ntohs((header)->qdcount)) // number of questions
+#define DNS_GET_ANCOUNT(header) (ntohs((header)->ancount)) // number of answers
 
 /* QUESTION */
-#define DNS_GET_QTYPE   (question) (ntohs(question->qtype))
-#define DNS_GET_QCLASS  (question) (ntohs(question->qtype))
+#define DNS_GET_QTYPE(question) (ntohs(question->qtype))
+#define DNS_GET_QCLASS(question) (ntohs(question->qtype))
 
 /* RESOURCE */
-#define DNS_GET_TYPE    (resource) (ntohs(resource->type))
-#define DNS_GET_CLASS   (resource) (ntohs(resource->class_name))
-#define DNS_GET_TTL     (resource) (ntohs(resource->ttl))
-#define DNS_GET_RDLEN   (resource) (ntohs(resource->rdlength))
+#define DNS_GET_TYPE(resource) (ntohs(resource->type))
+#define DNS_GET_CLASS(resource) (ntohs(resource->class_name))
+#define DNS_GET_TTL(resource) (ntohs(resource->ttl))
+#define DNS_GET_RDLEN(resource) (ntohs(resource->rdlength))
 
 #define DNS_TYPE_A      (1) // type - A record, QTYPE
 #define DNS_CLASS_IP    (1) // class - ip, QTYPE / TYPE

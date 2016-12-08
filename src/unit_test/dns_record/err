@@ -1,0 +1,14 @@
+test_dns.c:22:10: error: array initializer must be an initializer list or string literal
+    char test_name[] = compare;
+         ^
+test_dns.c:40:12: warning: '_run_tests' is deprecated [-Wdeprecated-declarations]
+    return run_tests(tests);
+           ^
+/usr/local/include/cmocka.h:1701:26: note: expanded from macro 'run_tests'
+#define run_tests(tests) _run_tests(tests, sizeof(tests) / sizeof(tests)[0])
+                         ^
+/usr/local/include/cmocka.h:2244:23: note: '_run_tests' has been explicitly marked deprecated here
+CMOCKA_DEPRECATED int _run_tests(const UnitTest * const tests,
+                      ^
+1 warning and 1 error generated.
+make: *** [test_dns.o] Error 1
