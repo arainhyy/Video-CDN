@@ -4,6 +4,27 @@
 
 #include "parse.h"
 
+node* clients;
+int client_num;
+node* servers;
+int server_num;
+node* nodes;
+int total_num;
+
+int count_char_num(char* str, char c);
+
+/**
+ * Initialize global variables.
+ */
+void init() {
+  clients = NULL;
+  client_num = 0;
+  servers = NULL;
+  server_num = 0;
+  nodes = NULL;
+  total_num = 0;
+}
+
 /**
  * Parse topo in lsa file into node list with their neighbors.
  *
@@ -17,17 +38,36 @@ int parse_LSA_file(char* file_name) {
   }
   char line[MAX_LINE_LEN];
   char node_ip[MAX_IP_LEN];
-  int seq_num;
+  int seq_num = -1;
   char neighbors[MAX_LINE_LEN];
   while (fgets(line, MAX_LINE_LEN, f)) {
-    if (sscanf(line, "%s, %d %s", node_ip, &seq_num, neighbors) < 3) {
+    if (sscanf(line, "%s %d %s", node_ip, &seq_num, neighbors) < 3) {
       return -1;
     }
-    add_node_by_ip(node_ip, &nodes);
-    if (exist_in_list(node_ip, &servers) == NOT_ALREADY_EXISTED) {
-      add_node_by_ip(node_ip, &clients);
+
+    node* now = add_node_by_ip_with_num(node_ip, &nodes, &total_num);
+    if (!exist_in_list(node_ip, &servers) && node_ip[0] != 'r') {
+      add_node_by_ip_with_num(node_ip, &clients, &client_num);
+    }
+    if (seq_num > now->seq_num) {
+      now->seq_num = seq_num;
+      free(now->neighbors);
+      int neighbor_num = count_char_num(neighbors, ',') + 1;
+      now->neighbors = (node**) malloc(sizeof(node*) * neighbor_num);
+      now->neighbor_num = neighbor_num;
+      char* neighbor = strtok(neighbors, ",");
+      int i;
+      for (i = 0; i < neighbor_num; i++) {
+        node* this_neighbor = exist_in_list(neighbor, &nodes);
+        if (this_neighbor == NULL) {
+          this_neighbor = add_node_by_ip_with_num(neighbor, &nodes, &total_num);
+        }
+        now->neighbors[i] = this_neighbor;
+        neighbor = strtok(NULL, ",");
+      }
     }
   }
+  fclose(f);
   return 0;
 }
 
@@ -44,9 +84,11 @@ int parse_server_file(char* file_name) {
   }
   char node_ip[MAX_IP_LEN];
   while (fgets(node_ip, MAX_LINE_LEN, f)) {
-    add_node_by_ip(node_ip, &nodes);
-    add_node_by_ip(node_ip, &servers);
+    node_ip[strlen(node_ip) - 1] = '\0';
+    add_node_by_ip_with_num(node_ip, &nodes, &total_num);
+    add_node_by_ip_with_num(node_ip, &servers, &server_num);
   }
+  fclose(f);
   return 0;
 }
 
@@ -55,34 +97,60 @@ int parse_server_file(char* file_name) {
  *
  * @param ip IP field value.
  * @param _header Address of list header.
- * @return 1 if add successfully.
+ * @param num Pointer of number.
+ * @return Node pointer.
  */
-int add_node_by_ip(char* ip, node** _header) {
-  if (exist_in_list(ip, _header) == ALREADY_EXISTED) {
-    return ALREADY_EXISTED;
+node* add_node_by_ip_with_num(char* ip, node** _header, int* num) {
+  node* new_node;
+  if ((new_node = exist_in_list(ip, _header)) != NULL) {
+    return new_node;
   }
+  (*num)++;
   node* pt = *_header;
-  node* new_node = (node*) malloc(sizeof(node));
+  new_node = (node*) malloc(sizeof(node));
   strcpy(new_node->ip, ip);
+  new_node->neighbors = NULL;
+  new_node->seq_num = -1;
   new_node->next = pt;
-  _header = &new_node;
-  return 1;
+  new_node->visited = 0;
+  *_header = new_node;
+  return new_node;
+}
+
+/**
+ * Count character appearance times in a char array.
+ *
+ * @param str
+ * @param c
+ * @return Appearance times.
+ */
+int count_char_num(char* str, char c) {
+  int len = strlen(str);
+  int i;
+  int cnt = 0;
+  for (i = 0; i < len; i++) {
+    if (str[i] == c) {
+      cnt++;
+    }
+  }
+  return cnt;
 }
 
 /**
  * Check if this node has already existed in node list by ip field.
+ *
  * @param ip IP field value.
  * @param _header Address of list header.
- * @return ALREADY_EXISTED or NOT_ALREADY_EXISTED.
+ * @return Node pointer.
  */
-int exist_in_list(char* ip, node** _header) {
+node* exist_in_list(char* ip, node** _header) {
   node* pt = *_header;
   while (pt != NULL) {
     // If this node has been added in list, return.
     if (strcmp(ip, pt->ip) == 0) {
-      return ALREADY_EXISTED;
+      return pt;
     }
     pt = pt->next;
   }
-  return NOT_ALREADY_EXISTED;
+  return NULL;
 }

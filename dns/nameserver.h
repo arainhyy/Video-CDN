@@ -16,6 +16,8 @@
 #include <arpa/inet.h>
 
 #include "log.h"
+#include "parse.h"
+#include "load_balance.h"
 
 // #define DEBUG
 #ifdef DEBUG

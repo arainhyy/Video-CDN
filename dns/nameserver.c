@@ -4,6 +4,15 @@
 
 #include "nameserver.h"
 
+extern node* clients;
+extern int client_num;
+extern node* servers;
+extern int server_num;
+extern node* nodes;
+extern int total_num;
+
+extern routing_table_entry* routing_table;
+
 struct nameserver_param {
   int is_round_robin;
   char log_file[PATH_LEN];
@@ -61,8 +70,36 @@ int main(int argc, char* argv[]) {
 
   start_logger("mylog.txt");
   nameserver_setup_listen();
-  //TODO(yayunh):Parse two files.
+  // Parse two files.
+  int ret = 0;
+  ret += parse_server_file(config.server_file);
+  ret += parse_LSA_file(config.lsa_file);
+  ret += build_routing_table();
+  if (ret > 0) {
+    fprintf(stderr, "Parse file error\n");
+  }
 
+  // TODO(hanlins): use server_ip to reply request from client.
+  //************************************************************
+  char* server_ip;
+  char* client_ip; // Get this from deserialized packet.
+  node* round_robin_pt = servers;
+  if (config.is_round_robin) {
+    server_ip = round_robin_pt->ip;
+    round_robin_pt = round_robin_pt->next;
+    if (!round_robin_pt) {
+      round_robin_pt = servers;
+    }
+  } else {
+    int i;
+    for (i = 0; i < client_num; i++) {
+      if (strcmp(routing_table[i].client_ip, client_ip)) {
+        server_ip = routing_table[i].server_ip;
+        break;
+      }
+    }
+  }
+  //************************************************************
 
   close_logger();
   return 0;
