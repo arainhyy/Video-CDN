@@ -9,6 +9,7 @@
 #include "helper.h"
 #include "log.h"
 #include "parse.h"
+#include "mydns.h"
 
 #define PROXY_MAX_LISTEN (5)
 #define PROXY_FD_BROWSER (1 << 0)
@@ -103,9 +104,15 @@ void proxy_init_config(char **argv, int www_ip) {
 		puts("has www_ip");
         inet_aton(argv[7], &config.www_ip);
         config.www_ip_str = argv[7];
+        config.need_dns = 0;
+    } else {
+        // otherwise, not use hard-coded ip addr
+        init_mydns(argv[5], argv[6]);
+        config.need_dns = 1;
     }
     config.list_conn = NULL;
     config.default_list = NULL;
+    // init the dns setting on client
 //	log_init(config.log);
 }
 
@@ -297,7 +304,19 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         close(sock);
         return -1;
     }
-    ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
+    if (config.need_dns) {
+        // use dns function to get the ip
+        struct addrinfo *addr_result;
+        ret = resolve("video.cs.cmu.edu", "8080", NULL, &addr_result);
+        if (ret >= 0) {
+            server_addr.sin_addr = ((struct sockaddr_in*)addr_result->ai_addr)->sin_addr;
+            free(addr_result);
+            ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
+        }
+        // otherwise just return ret < 0
+    } else {
+        ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
+    }
     if (ret < 0) {
 		puts("connection error!");
         perror("proxy_connect_server connect");

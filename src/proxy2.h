@@ -44,6 +44,7 @@ typedef struct proxy_config {
     const char *fake_ip_str;
     const char *www_ip_str;
     bitrate *default_list;
+    int need_dns;
 } proxy_config_t;
 
 
