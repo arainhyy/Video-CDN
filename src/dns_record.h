@@ -54,6 +54,9 @@ typedef struct dns_resource {
 #define DNS_GET_ID(header) (ntohs((header)->id))
 #define DNS_GET_QDCOUNT(header) (ntohs((header)->qdcount)) // number of questions
 #define DNS_GET_ANCOUNT(header) (ntohs((header)->ancount)) // number of answers
+#define DNS_SET_ID(header, id) ((header)->id = htons(id))
+#define DNS_SET_QDCOUNT(header, q) ((header)->qdcount = htons(q)) // number of questions
+#define DNS_SET_ANCOUNT(header, a) ((header)->ancount = htons(a)) // number of answers
 
 /* QUESTION */
 #define DNS_GET_QTYPE(question) (ntohs(question->qtype))
@@ -99,8 +102,7 @@ int dns_isinvalid(dns_header_t *header, int is_request);
 int dns_parse_request(const char *buf, int size, char *result);
 int dns_parse_response(const char *response, int size, struct in_addr *result);
 
-
-
 int dns_gen_response(const char *qname, const char *ip_addr, uint16_t dns_id, int rcode, char *result);
+int dns_generate_request(const char *query, int dns_id, char *result);
 
 #endif /* !__DNS_RECORD_H__ */

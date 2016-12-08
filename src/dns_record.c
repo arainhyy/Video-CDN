@@ -68,7 +68,7 @@ int parse_name(const char *question, int size, char *result) {
     int len = strlen(result);
     result[len - 1] = '\0';
     // test QTYPE and QCLASS
-    return 0;
+    return len;
 }
 
 // translate address to format in dns query
@@ -134,14 +134,15 @@ int parse_resource(const char *buf, int size, struct in_addr *result) {
 }
 
 int generate_question(const char *query, char *result) {
-    int ret = translate_name(query, result), offset = 0;
+    int ret = translate_name(query, result);
     if (ret < 0) {
         return -1;
     }
     dns_question_t question;
     question.qclass = htons(DNS_CLASS_IP);
     question.qtype = htons(DNS_TYPE_A);
-    memcpy(result + offset, &question, sizeof(dns_question_t));
+    ret++;
+    memcpy(result + ret, &question, sizeof(dns_question_t));
     ret += sizeof(dns_question_t);
     return ret;
 }
@@ -156,7 +157,8 @@ int generate_resource(const char *query, const char *ip, char *result) {
     resource.class_name = htons(DNS_CLASS_IP);
     resource.ttl = htons(0);
     resource.rdlength = htons(sizeof(struct in_addr));
-    memcpy(result + offset, &resource, sizeof(dns_resource_t));
+    ret++;
+    memcpy(result + ret, &resource, sizeof(dns_resource_t));
     offset += sizeof(dns_resource_t);
     struct in_addr ip_addr_temp;
     inet_aton(ip, &ip_addr_temp);
@@ -232,17 +234,28 @@ int dns_parse_request(const char *buf, int size, char *result) {
     return parse_question(buf + offset, size - offset, result + offset);
 }
 
-/*
-int dns_gen_response(const char *qname, const char *ip_addr, uint16_t dns_id, int rcode, char *result) {
+int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, int rcode, char *result) {
+    int offset = 0;
     // init header
-    dns_header_init((dns_header_t *) (result), dns_id);
-    // mark as response
-    dns_header_set_qr((dns_header_t *) (result));
-    // set response rcode
-    dns_rec_set_rcode((dns_header_t *) (result), rcode);
-    // append responses
+    dns_header_t *header = result;
+    dns_header_init(header, dns_id);
+    uint16_t flags = DNS_FLAG_QR | DNS_FLAG_AA;
+    DNS_SET_FLAG(header, flags);
+    DNS_SET_QDCOUNT(header, 1);
+    DNS_SET_ANCOUNT(header, 1);
+    offset += sizeof(dns_header_t);
+    // generate question
+    int ret = generate_question(query, result + offset);
+    if (ret < 0) {
+        return -1;
+    }
+    offset += ret;
+    ret = generate_resource(query, ip_addr, result + offset);
+    if (ret < 0) {
+        return -1;
+    }
+    return ret + offset;
 }
-*/
 
 // client part
 // parse response
@@ -284,9 +297,21 @@ int dns_parse_response(const char *response, int size, struct in_addr *result) {
     return ret;
 }
 
-/*
 // generate request
-int dns_generate_request(const char *query, const char *answer_ip, int dns_id, int rcode, char *result) {
-
+int dns_generate_request(const char *query, int dns_id, char *result) {
+    int offset = 0;
+    // init header
+    dns_header_t *header = result;
+    dns_header_init(header, dns_id);
+//    uint16_t flags = ;
+//    DNS_SET_FLAG(header, flags);
+    DNS_SET_QDCOUNT(header, 1);
+    DNS_SET_ANCOUNT(header, 0);
+    offset += sizeof(dns_header_t);
+    // generate question
+    int ret = generate_question(query, result + offset);
+    if (ret < 0) {
+        return -1;
+    }
+    return ret + sizeof(dns_header_t);
 }
-*/
