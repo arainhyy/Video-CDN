@@ -274,6 +274,7 @@ static int proxy_setup_listen() {
 }
 
 static int proxy_connect_server(proxy_conn_t *conn) {
+	puts("connect server");
     // initialize address
     struct sockaddr_in proxy_addr;
     memset(&proxy_addr, 0, sizeof(struct sockaddr_in));
@@ -304,6 +305,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         close(sock);
         return -1;
     }
+	// try to resolve now
+	puts("try to resolve now");
     if (config.need_dns) {
         // use dns function to get the ip
         struct addrinfo *addr_result;

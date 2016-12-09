@@ -33,6 +33,7 @@ int init_mydns(const char *dns_ip, unsigned int dns_port) {
 
 int resolve(const char *node, const char *service,
             const struct addrinfo *hints, struct addrinfo **res) {
+	printf("resolve service: %s\n", service);
     char packet[DNS_MSG_MAX_LEN] = {0};
     int size = dns_generate_request(node, dns_id, packet);
     int ret = sendto(dns_sock, packet, size, 0, (struct sockaddr*) (&dns_addr), sizeof(dns_addr));
@@ -46,6 +47,12 @@ int resolve(const char *node, const char *service,
         perror("resolve recvfrom");
         return -1;
     }
-    ret = dns_parse_response(packet, size, res);
-    return ret;
+	// modifided here, malloc and freed by user
+	struct in_addr result_addr;
+	dns_parse_response(packet, size, &result_addr);
+	struct sockaddr_in* result_addr_pt = malloc(sizeof(struct sockaddr_in));
+	result_addr_pt->sin_addr = result_addr;
+	*res = malloc(sizeof(struct addrinfo));
+	(*res)->ai_addr = (struct sockaddr *) result_addr_pt;
+    return 0;
 }
