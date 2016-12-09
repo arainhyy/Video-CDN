@@ -51,6 +51,7 @@ void dns_header_init(dns_header_t *header, int id) {
 //}
 
 int parse_name(const char *question, int size, char *result) {
+	puts("parse name");
     char *pt = question;
     result[0] = '\0';
     while (size > 0) {
@@ -61,12 +62,14 @@ int parse_name(const char *question, int size, char *result) {
         if (result) {
             strncat(result, pt, lable_size);
             strcat(result, ".");
+			printf("label: %s\n", result);
         }
         pt += lable_size;
         size -= lable_size;
     }
     int len = strlen(result);
     result[len - 1] = '\0';
+	printf("lable result: %s, pt %p\n", result, result);
     // test QTYPE and QCLASS
     return len;
 }
@@ -78,34 +81,36 @@ int translate_name(const char *addr, char *result) {
         char curr_char = addr[total + label_len];
         if (curr_char != '.') {
             result[total + label_len + 1] = curr_char;
-//            printf("index %d, char %c\n", total + label_len + 1, curr_char);
         } else {
             result[total] = (char) label_len;
-//            printf("index %d, num %d\n", total, label_len);
             total += label_len + 1;
             label_len = -1;
         }
         label_len++;
     }
     result[total] = (char) label_len;
-//    printf("index %d, num %d\n", total, label_len);
     total += label_len;
-//    printf("final index: %d\n", total);
-    result[total + 1] = '\0';
-    return total;
+    //result[total + 1] = '\0';
+    //return total;
+    result[total + 1] = 0;
+	printf("generate resource: %s, %p\n", result, result);
+    return total + 2;
 }
 
 // parse a single question item
 int parse_question(const char *buf, int size, char *result) {
+	puts("parse question");
     int offset = 0;
     offset += parse_name(buf + offset, size - offset, result);
     dns_question_t *question = buf + offset;
     // check QTYPE and QCLASS
     if (DNS_GET_QCLASS(question) != DNS_CLASS_IP) {
-        return -1;
+		printf("error qclass: %d\n", DNS_GET_QCLASS(question));
+        //return -1; // TODO
     }
     if (DNS_GET_QTYPE(question) != DNS_TYPE_A) {
-        return -1;
+		printf("error qtype: %d\n", DNS_GET_QTYPE(question));
+        //return -1; // TODO
     }
     // return zero
     return offset + sizeof(dns_question_t);
@@ -135,13 +140,14 @@ int parse_resource(const char *buf, int size, struct in_addr *result) {
 
 int generate_question(const char *query, char *result) {
     int ret = translate_name(query, result);
+	printf("translate len: %d\n", ret);
     if (ret < 0) {
         return -1;
     }
     dns_question_t question;
     question.qclass = htons(DNS_CLASS_IP);
     question.qtype = htons(DNS_TYPE_A);
-    ret++;
+    //ret++;
     memcpy(result + ret, &question, sizeof(dns_question_t));
     ret += sizeof(dns_question_t);
     return ret;
@@ -152,27 +158,26 @@ int generate_resource(const char *query, const char *ip, char *result) {
     if (ret < 0) {
         return -1;
     }
+	offset += ret;
+	printf("offset: %d\n", offset);
     dns_resource_t resource;
     resource.type = htons(DNS_TYPE_A);
     resource.class_name = htons(DNS_CLASS_IP);
     resource.ttl = htons(0);
     resource.rdlength = htons(sizeof(struct in_addr));
-    ret++;
-    memcpy(result + ret, &resource, sizeof(dns_resource_t));
+    memcpy(result + offset, &resource, sizeof(dns_resource_t));
     offset += sizeof(dns_resource_t);
+	printf("offset: %d\n", offset);
     struct in_addr ip_addr_temp;
     inet_aton(ip, &ip_addr_temp);
+    memcpy(result + offset - 2, &ip_addr_temp.s_addr, 4);
     offset += sizeof(struct in_addr);
-    memcpy(result + offset, &ip_addr_temp.s_addr, sizeof(struct in_addr));
-    return ret + offset;
+	printf("offset: %d\n", offset);
+    return offset;
 }
 
 int dns_isinvalid(dns_header_t *header, int is_request) {
     char *pt = header;
-	printf("%01x\n", pt[0]);
-	printf("%01x\n", pt[1]);
-	printf("%01x\n", pt[2]);
-	printf("%01x\n", pt[3]);
     if (is_request) {
         if (DNS_CHECK_FLAG(header, DNS_FLAG_QR) != 0) {
 			puts("QR error");
@@ -180,7 +185,7 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
         }
         if (DNS_CHECK_FLAG(header, DNS_FLAG_AA) != 0) {
 			puts("AA error");
-            return -1;
+            //return -1;
         }
         // make sure that no answer and only one question
         if (DNS_GET_QDCOUNT(header) != 1) {
@@ -248,14 +253,19 @@ int dns_parse_request(const char *buf, int size, char *result) {
     int offset = 0 + sizeof(dns_header_t);
     // get number of questions, should be 1
     if (DNS_GET_QDCOUNT(header) != 1) {
+		printf("qd error\n");
         return -1;
     }
     // parse the question
-    return parse_question(buf + offset, size - offset, result + offset);
+    //int ret = parse_question(buf + offset, size - offset, result + offset);
+    int ret = parse_question(buf + offset, size - offset, result);
+	printf("parse request result: %s, pt %p\n", result, result);
+	return ret;
 }
 
 int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, int rcode, char *result) {
 	puts("dns generate response");
+	printf("result ip: %s\n", ip_addr);
     int offset = 0;
     // init header
     dns_header_t *header = result;
@@ -283,6 +293,7 @@ int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, in
     if (ret < 0) {
         return -1;
     }
+	printf("gen_response ret: %d\n", ret + offset);
     return ret + offset;
 }
 
