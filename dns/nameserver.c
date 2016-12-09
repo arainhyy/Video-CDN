@@ -150,12 +150,7 @@ static int nameserver_run() {
         // parse the request
         char qname[512] = {0};
         //retval = dns_parse_request(request, size, qname);
-        int kk = 0;
-        for (; kk < size; kk++) {
-          logout("%c", request[kk]);
-        }
-        close_logger();
-        printf("size: %d\n", size);
+        
         int retval2 = dns_parse_request(request, size, qname);
 		printf("qname: %s\n", qname);
 		printf("retval: %d\n", retval2);
