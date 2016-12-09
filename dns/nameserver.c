@@ -1,7 +1,7 @@
 //
 // Created by yayunh on 11/22/16.
 //
-
+#include <time.h>
 #include "nameserver.h"
 #include "../src/dns_record.h"
 
@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
     strcpy(config.lsa_file, argv[argv_offset + 5]);
 
     start_logger("mylog.txt");
+    log_init(config.log_file);
     // run nameserver
     return nameserver_run();
 }
@@ -158,6 +159,10 @@ static int nameserver_run() {
         // construct udp packet to send
         char packet[DNS_MSG_MAX_LEN + 1] = {0};
         size = dns_gen_response(qname, server_ip, dns_id, 0, packet);
+        // keep logging
+        time_t now;
+        time(&now);
+        log_record(config.log_file, now, client_ip, qname, server_ip);
         send(sock, packet, size, 0);
         // end of handling iteration
     }
