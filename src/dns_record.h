@@ -33,24 +33,18 @@ typedef struct dns_resource {
 #define DNS_MSG_MAX_LEN    (65535)
 /* HEADER */
 // mask in flag field
-#define DNS_FLAG_QR        (1 << 0)
-#define DNS_MASK_OPCODE    (0xF << 1)
-#define DNS_FLAG_AA        (1 << 5)
-#define DNS_FLAG_TC        (1 << 6)
-#define DNS_FLAG_RD        (1 << 7)
-#define DNS_FLAG_RA        (1 << 8)
-#define DNS_FLAG_Z         (0b111 << 9)
-#define DNS_FLAG_RCODE     (0xF << 12)
+#define DNS_FLAG_QR        (1 << 7)
+#define DNS_MASK_OPCODE    (0xF << 3)
+#define DNS_FLAG_AA        (1 << 2)
+#define DNS_FLAG_TC        (1 << 1)
+#define DNS_FLAG_RD        (1 << 0)
+#define DNS_FLAG_RA        (1 << 15)
+#define DNS_FLAG_Z         (0b111 << 12)
+#define DNS_FLAG_RCODE     (0xF << 8)
+#define DNS_SET_FLAG(header, flag) ((header)->flags |= flag)
+#define DNS_CLR_FLAG(header, flag) ((header)->flags &= ~(flag))
 
-#define DNS_SET_FLAG(header, flag) ({\
-        uint16_t flags = ntohs(header->flags); \
-        flags |= flag; \
-        (header)->flags = htons(flags);})
-#define DNS_CLR_FLAG(header, flag) ({\
-        uint16_t flags = ntohs((header)->flags); \
-        flags &= ~(flag); \
-        header->flags = htons(flags);})
-#define DNS_CHECK_FLAG(request, mask) (ntohs((header)->flags) & mask)
+#define DNS_CHECK_FLAG(request, mask) ((header)->flags & mask)
 #define DNS_GET_ID(header) (ntohs((header)->id))
 #define DNS_GET_QDCOUNT(header) (ntohs((header)->qdcount)) // number of questions
 #define DNS_GET_ANCOUNT(header) (ntohs((header)->ancount)) // number of answers

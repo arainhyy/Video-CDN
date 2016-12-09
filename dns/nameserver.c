@@ -142,12 +142,6 @@ static int nameserver_run() {
 		socklen_t client_sock_len;
 		client_sock_len = sizeof(client_sock_addr);
         int size = recvfrom(sock, request, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
-		printf("recv:\n");
-		printf("%d\n", request[0]);
-		printf("%d\n", request[4]);
-		printf("%d\n", request[8]);
-		printf("%d\n", request[12]);
-		puts("===end===");
         if (size < 0) {
             perror("nameserver_run recv");
             retval = -1;

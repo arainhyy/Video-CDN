@@ -261,6 +261,7 @@ int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, in
     dns_header_t *header = result;
     dns_header_init(header, dns_id);
     uint16_t flags = DNS_FLAG_QR | DNS_FLAG_AA;
+	printf("%04x\n", flags);
 	if (rcode != 0) {
 		puts("rcode != 0");
 		DNS_SET_RCODE(header);
