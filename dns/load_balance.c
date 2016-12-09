@@ -27,6 +27,7 @@ int build_routing_table() {
   node* client = nodes;
   int cnt = 0;
   while (client) {
+    puts("while client");
     if (exist_in_list(client->ip, &servers) || client->ip[0] == 'r' || client->neighbor_num == 0) {
       client = client->next;
       continue;
@@ -40,10 +41,14 @@ int build_routing_table() {
     header.prev = NULL;
     tail.prev = &header;
     strcpy(routing_table[cnt].client_ip, client->ip);
+	puts("before bfs");
     char* server_ip = bfs(&client, &header, &tail);
+	puts("after bfs");
     strcpy(routing_table[cnt++].server_ip, server_ip);
     client = client->next;
+	puts("after update client");
   }
+  puts("exit while loop");
   return 0;
 }
 

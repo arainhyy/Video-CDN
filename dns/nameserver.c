@@ -52,10 +52,10 @@ static int nameserver_setup_listen() {
         return -1;
     }
     // listen to port
-    if (listen(sock, PROXY_MAX_LISTEN) < 0) {
-        perror("nameserver_setup_listen listen");
-        return -1;
-    }
+    //if (listen(sock, PROXY_MAX_LISTEN) < 0) {
+    //    perror("nameserver_setup_listen listen");
+    //    return -1;
+    //}
     return sock;
 }
 
@@ -78,25 +78,35 @@ int main(int argc, char *argv[]) {
 }
 
 static int nameserver_run() {
+	puts("1");
     int sock = nameserver_setup_listen();
+	puts("2");
     if (sock < 0) {
         return -1;
     }
     // Parse two files.
     int ret = 0;
+	puts("3");
     ret += parse_server_file(config.server_file);
+	puts("4");
     ret += parse_LSA_file(config.lsa_file);
+	puts("5");
     ret += build_routing_table();
+	puts("6");
     if (ret > 0) {
         fprintf(stderr, "Parse file error\n");
         return -1;
     }
+	puts("7");
 
     int retval = 0;
     while (1) {
+		puts("8");
         // copy fd set for select
         fd_set ready_set = ready;
+		puts("before select");
         int ready_num = select(fd_max, &ready_set, NULL, NULL, NULL);
+		puts("after select");
         // error handling
         if (ready_num < 0) {
             perror("nameserver_run");
