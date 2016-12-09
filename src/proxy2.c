@@ -107,7 +107,7 @@ void proxy_init_config(char **argv, int www_ip) {
         config.need_dns = 0;
     } else {
         // otherwise, not use hard-coded ip addr
-        init_mydns(argv[5], argv[6]);
+        init_mydns(argv[5], argv[6], argv[4]);
         config.need_dns = 1;
     }
     config.list_conn = NULL;
@@ -274,6 +274,7 @@ static int proxy_setup_listen() {
 }
 
 static int proxy_connect_server(proxy_conn_t *conn) {
+	puts("connect server");
     // initialize address
     struct sockaddr_in proxy_addr;
     memset(&proxy_addr, 0, sizeof(struct sockaddr_in));
@@ -304,6 +305,8 @@ static int proxy_connect_server(proxy_conn_t *conn) {
         close(sock);
         return -1;
     }
+	// try to resolve now
+	puts("try to resolve now");
     if (config.need_dns) {
         // use dns function to get the ip
         struct addrinfo *addr_result;

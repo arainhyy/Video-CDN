@@ -9,7 +9,7 @@
  *
  * @return 0 on success, -1 otherwise
  */
-int init_mydns(const char *dns_ip, unsigned int dns_port);
+int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip);
 
 
 /**

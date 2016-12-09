@@ -49,7 +49,8 @@ typedef struct dns_resource {
 #define DNS_SET_FLAG(header, flag) ((header)->flags |= flag)
 #define DNS_CLR_FLAG(header, flag) ((header)->flags &= ~(flag))
 
-#define DNS_CHECK_FLAG(request, mask) (ntohs((header)->flags) & mask)
+//#define DNS_CHECK_FLAG(request, mask) (ntohs((header)->flags) & mask)
+#define DNS_CHECK_FLAG(request, mask) ((header)->flags & mask)
 #define DNS_GET_ID(header) (ntohs((header)->id))
 #define DNS_GET_QDCOUNT(header) (ntohs((header)->qdcount)) // number of questions
 #define DNS_GET_ANCOUNT(header) (ntohs((header)->ancount)) // number of answers

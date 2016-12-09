@@ -198,18 +198,26 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
         }
     }
     else {
-        if (!DNS_CHECK_FLAG(header, DNS_FLAG_QR)) {
-            return -1;
+		puts("check response");
+        if (DNS_CHECK_FLAG(header, DNS_FLAG_QR) == 0) {
+			puts("QR error");
+			printf("QR: %d\n", DNS_CHECK_FLAG(header, DNS_FLAG_QR));
+            //return -1;
         }
-        if (!DNS_CHECK_FLAG(header, DNS_FLAG_AA)) {
-            return -1;
+        if (DNS_CHECK_FLAG(header, DNS_FLAG_AA) == 0) {
+			puts("AA error");
+            //return -1;
         }
         // make sure that no question and only one answer
         if (DNS_GET_QDCOUNT(header) < 0) {
-            return -1;
+			puts("QD error");
+			printf("QD: %d\n", DNS_GET_QDCOUNT(header));
+            //return -1;
         }
         if (DNS_GET_ANCOUNT(header) != 1) {
-            return -1;
+			puts("AN error");
+			printf("AN: %d\n", DNS_GET_ANCOUNT(header));
+            //return -1;
         }
     }
     // check RD, RA, Z
@@ -296,9 +304,8 @@ int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, in
     return ret + offset;
 }
 
-// client part
-// parse response
 int dns_parse_response(const char *response, int size, struct addrinfo **result) {
+	puts("### parse dns response");
     // parse header
     dns_header_t *header = response;
     // check whether response, if not then return negative
@@ -343,15 +350,49 @@ int dns_generate_request(const char *query, int dns_id, char *result) {
     // init header
     dns_header_t *header = result;
     dns_header_init(header, dns_id);
-//    uint16_t flags = ;
-//    DNS_SET_FLAG(header, flags);
     DNS_SET_QDCOUNT(header, 1);
     DNS_SET_ANCOUNT(header, 0);
+    offset += sizeof(dns_header_t);
+    // generate question
+	printf("qname: %s\n", query);
+    int ret = generate_question(query, result + offset);
+    if (ret < 0) {
+        return -1;
+    }
+	printf("dns request size: %d\n", ret + offset);
+    return ret + offset;
+}
+/*
+	puts("dns generate response");
+	printf("result ip: %s\n", ip_addr);
+    int offset = 0;
+    // init header
+    dns_header_t *header = result;
+    dns_header_init(header, dns_id);
+    uint16_t flags = DNS_FLAG_QR | DNS_FLAG_AA;
+	printf("%04x\n", flags);
+	if (rcode != 0) {
+		puts("rcode != 0");
+		DNS_SET_RCODE(header);
+		DNS_SET_FLAG(header, flags);
+		return sizeof(dns_header_t);
+	}
+	puts("set flags");
+    DNS_SET_FLAG(header, flags);
+    DNS_SET_QDCOUNT(header, 1);
+    DNS_SET_ANCOUNT(header, 1);
     offset += sizeof(dns_header_t);
     // generate question
     int ret = generate_question(query, result + offset);
     if (ret < 0) {
         return -1;
     }
-    return ret + sizeof(dns_header_t);
+    offset += ret;
+    ret = generate_resource(query, ip_addr, result + offset);
+    if (ret < 0) {
+        return -1;
+    }
+	printf("gen_response ret: %d\n", ret + offset);
+    return ret + offset;
 }
+*/
