@@ -1,11 +1,15 @@
 #include "mydns.h"
+#include "dns_record.h"
+#include <sys/socket.h>
 
+static int dns_id = 5, dns_sock = 0;
+static struct sockaddr_in dns_addr;
 
 int init_mydns(const char *dns_ip, unsigned int dns_port) {
     // bind to the assigned ip address : port
     struct in_addr dns_ip_addr;
     inet_aton(dns_ip, &dns_ip_addr);
-    struct sockaddr_in dns_addr;
+
     dns_addr.sin_family = AF_INET;
     dns_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     dns_addr.sin_port = htons(dns_port);
@@ -23,10 +27,25 @@ int init_mydns(const char *dns_ip, unsigned int dns_port) {
         perror("init_mydns bind");
         return ret;
     }
+    dns_sock = sock;
     return sock;
 }
 
 int resolve(const char *node, const char *service,
             const struct addrinfo *hints, struct addrinfo **res) {
-    return 0;
+    char packet[DNS_MSG_MAX_LEN] = {0};
+    int size = dns_generate_request(node, dns_id, packet);
+    int ret = sendto(dns_sock, packet, size, 0, (struct sockaddr*) (&dns_addr), sizeof(dns_addr));
+    if (ret < 0) {
+        perror("resolve sendto");
+        return -1;
+    }
+    int len = sizeof(dns_addr);
+    size = recvfrom(dns_sock, packet, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&dns_addr), (socklen_t *) (&len));
+    if (size < 0) {
+        perror("resolve recvfrom");
+        return -1;
+    }
+    ret = dns_parse_response(packet, size, res);
+    return ret;
 }
