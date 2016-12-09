@@ -279,6 +279,28 @@ class Project3Test(unittest.TestCase):
             print response
             self.assertTrue(response in servers)
 
+    def test_dns_lsa_topo2(self):
+        server_file = os.path.join(self.topo_dir, 'topo2.servers')
+        lsa_file = os.path.join(self.topo_dir, 'topo2.lsa')
+        self.run_dns('', 'dns.log', '7.0.0.1', self.dnsport, server_file, lsa_file)
+        time.sleep(1)
+
+        servers = ['4.0.0.1', '5.0.0.1', '6.0.0.1']
+        for i in xrange(5):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '1.0.0.1', '7.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response in servers)
+
+        for i in xrange(5):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '2.0.0.1', '7.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response in servers)
+
+        for i in xrange(5):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '3.0.0.1', '7.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response in servers)
+
     def test_dns_integration(self):
         dns = '29.97.92.45'
         client = '4.2.8.9'

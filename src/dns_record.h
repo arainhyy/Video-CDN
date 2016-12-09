@@ -2,6 +2,11 @@
 #define __DNS_RECORD_H__
 
 #include <stdint.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 //typedef unsigned short uint16_t;
 //typedef unsigned int uint32_t;
 
@@ -92,10 +97,10 @@ void dns_header_init(dns_header_t *header, int id);
 int parse_name(const char *question, int size, char *result);
 int translate_name(const char *addr, char *result);
 int parse_question(const char *buf, int size, char *result);
-int parse_resource(const char *buf, int size, struct in_addr *result);
+int parse_resource(const char *buf, int size, struct addrinfo **result);
 int dns_isinvalid(dns_header_t *header, int is_request);
 int dns_parse_request(const char *buf, int size, char *result);
-int dns_parse_response(const char *response, int size, struct in_addr *result);
+int dns_parse_response(const char *response, int size, struct addrinfo **result);
 
 int dns_gen_response(const char *qname, const char *ip_addr, uint16_t dns_id, int rcode, char *result);
 int dns_generate_request(const char *query, int dns_id, char *result);

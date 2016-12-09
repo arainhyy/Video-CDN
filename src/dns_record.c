@@ -1,5 +1,3 @@
-#include <string.h>
-#include <arpa/inet.h>
 #include "dns_record.h"
 //#include <stdint.h>
 //#include <inttypes.h>
@@ -117,7 +115,7 @@ int parse_question(const char *buf, int size, char *result) {
 }
 
 // parse a single answer item
-int parse_resource(const char *buf, int size, struct in_addr *result) {
+int parse_resource(const char *buf, int size, struct addrinfo **result) {
     int offset = 0;
     // ignore question name
     offset += parse_name(buf + offset, size - offset, NULL);
@@ -134,7 +132,8 @@ int parse_resource(const char *buf, int size, struct in_addr *result) {
         return -1;
     }
     offset += sizeof(dns_resource_t);
-    result->s_addr = ntohs(buf + offset);
+    ((struct sockaddr_in*)(*result)->ai_addr)->sin_addr.s_addr = ntohs(buf + offset);
+//    result->s_addr = ntohs(buf + offset);
     return offset;
 }
 
@@ -299,7 +298,7 @@ int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, in
 
 // client part
 // parse response
-int dns_parse_response(const char *response, int size, struct in_addr *result) {
+int dns_parse_response(const char *response, int size, struct addrinfo **result) {
     // parse header
     dns_header_t *header = response;
     // check whether response, if not then return negative

@@ -191,8 +191,7 @@ static int nameserver_run() {
             }
         } else {
             int i;
-			printf("client_num: %d\n", client_num);
-            for (i = 0; i < client_num; i++) {
+            for (i = 0; i < total_num; i++) {
 				puts("9.1");
 				//puts(routing_table[i].client_ip);
 				printf("client_ip: %p\n", client_ip);

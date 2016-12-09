@@ -1,6 +1,7 @@
 #include "mydns.h"
 #include "dns_record.h"
 #include <sys/socket.h>
+#include <stdio.h>
 
 static int dns_id = 5, dns_sock = 0;
 static struct sockaddr_in dns_addr;
@@ -33,6 +34,17 @@ int init_mydns(const char *dns_ip, unsigned int dns_port) {
 
 int resolve(const char *node, const char *service,
             const struct addrinfo *hints, struct addrinfo **res) {
+    // Resolve() should allocate a struct addrinfo, which the caller is responsible for freeing.
+    *res = (struct addrinfo*) malloc(sizeof(struct addrinfo));
+    memset(*res, 0, sizeof(struct addrinfo));
+    (*res)->ai_addrlen = sizeof(struct sockaddr_in);
+    (*res)->ai_addr = malloc(sizeof(struct sockaddr_in));
+    (*res)->ai_protocol = 0;
+    (*res)->ai_socktype = SOCK_STREAM;
+    (*res)->ai_family = AF_INET;
+    (*res)->ai_flags = AI_PASSIVE;
+    (*res)->ai_next = NULL;
+    // Handle request.
     char packet[DNS_MSG_MAX_LEN] = {0};
     int size = dns_generate_request(node, dns_id, packet);
     int ret = sendto(dns_sock, packet, size, 0, (struct sockaddr*) (&dns_addr), sizeof(dns_addr));
