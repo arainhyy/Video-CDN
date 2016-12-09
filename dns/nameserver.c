@@ -157,6 +157,7 @@ static int nameserver_run() {
         close_logger();
         printf("size: %d\n", size);
         int retval2 = dns_parse_request(request, size, qname);
+		printf("qname: %s\n", qname);
 		printf("retval: %d\n", retval2);
 		puts("9");
         unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request)); // TODO: check here, might not be ok
