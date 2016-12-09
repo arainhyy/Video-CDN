@@ -95,7 +95,15 @@ class Project3Test(unittest.TestCase):
                     yield line.split()
         logf.closed
 
+    def get(self, url):
+        return self.get_curl(url)
 
+    def get_requests(self, url):
+        return requests.get(url).content
+
+    def get_curl(self, url):
+        return check_both("curl -f -s %s" % url, shouldPrint=False)[0][0] 
+        
 
     def check_gets(self, ip, port, num_gets, log_file, link_bw, expect_br, use=5, alpha=1.0, tput_margin=0.3, bitrate_margin=0.1, large=False):
         # TODO: better way to do this?
@@ -111,15 +119,15 @@ class Project3Test(unittest.TestCase):
         # send a few gets (until we think their estimate should have stabilized)
         try: # this try is here so an exception will be thrown (and saved in self.exc_info) if we can't connect to proxy
             if large:
-                r = requests.get('http://%s:%s/vod/large/big_buck_bunny.f4m' % (ip, port))
+                content = self.get('http://%s:%s/vod/large/big_buck_bunny.f4m' % (ip, port))
             else:
-                r = requests.get('http://%s:%s/vod/big_buck_bunny.f4m' % (ip, port))
+                content = self.get('http://%s:%s/vod/big_buck_bunny.f4m' % (ip, port))
 
             for i in xrange(num_gets):
                 if large:
-                    r = requests.get('http://%s:%s/vod/large/1000Seg2-Frag3' %(ip, port))
+                    content = self.get('http://%s:%s/vod/large/1000Seg2-Frag3' %(ip, port))
                 else:
-                    r = requests.get('http://%s:%s/vod/1000Seg2-Frag7' %(ip, port))
+                    content = self.get('http://%s:%s/vod/1000Seg2-Frag7' %(ip, port))
             # check what bitrate they're requesting
             tputs = []
             tput_avgs = []
@@ -148,7 +156,7 @@ class Project3Test(unittest.TestCase):
             self.assertTrue(abs(bitrate - expect_br) < (1.0/float(alpha))*bitrate_margin*expect_br)
 
             # check the hash of the last chunk we requested
-            chunkhash = hashlib.sha256(r.content).hexdigest()
+            chunkhash = hashlib.sha256(content).hexdigest()
             print 'Hash of last chunk: %s' % chunkhash
             self.assertTrue(chunkhash == HASH_VALUE[expect_br])
         except Exception, e:
@@ -169,6 +177,16 @@ class Project3Test(unittest.TestCase):
             if float(e[4]) == start_br:
                 switch = 0
         return switch
+
+    def run_alpha_test(self, alpha, num_trials):
+        self.run_proxy('proxy.log', alpha, self.proxyport1, '1.0.0.1', '0.0.0.0', '0', '2.0.0.1')
+        self.run_events(os.path.join(self.topo_dir, 'adaptation-2000.events')) 
+        self.check_gets('1.0.0.1', self.proxyport1, num_trials, 'proxy.log', 2000, 1000, 3, alpha)
+        self.run_events(os.path.join(self.topo_dir, 'adaptation-900.events')) 
+        self.check_gets('1.0.0.1', self.proxyport1, num_trials/2, 'proxy.log', 900, 500, 3, alpha)
+        self.print_log('proxy.log')
+        self.check_errors()
+        return self.get_log_switch_len('proxy.log', num_trials, 1000, 500)
 
     def print_log(self, log):
         print '\n\n#################### %s ####################' % log
@@ -199,25 +217,92 @@ class Project3Test(unittest.TestCase):
         self.check_errors()
         print 'done test_proxy_adaptation'
     
-    def test_proxy_multiple_clients(self):
-        PROXY1_LOG = 'proxy1.log'
-        PROXY2_LOG = 'proxy2.log'
-        self.run_proxy(PROXY1_LOG, '1', self.proxyport1, '1.0.0.1', '0.0.0.0', '0', '3.0.0.1')
-        self.run_proxy(PROXY2_LOG, '1', self.proxyport2, '2.0.0.1', '0.0.0.0', '0', '3.0.0.1')
-        self.run_events(os.path.join(self.topo_dir, 'multiple.events'))
-        large = True if os.path.isdir(LARGE_FOLDER) else False
-        ts = []
-        ts.append(Thread(target=self.check_gets, args= ('1.0.0.1', self.proxyport1, 10, PROXY1_LOG, 950, 500, 7, 1.0, 0.6, 5, large)))
-        ts.append(Thread(target=self.check_gets, args= ('2.0.0.1', self.proxyport2, 10, PROXY2_LOG, 950, 500, 7, 1.0, 0.6, 5, large)))
-        for t in ts:
-            t.start()
-        for t in ts:
-            t.join()
-        self.print_log(PROXY1_LOG)
-        self.print_log(PROXY2_LOG)
-        self.check_errors()
-        print 'done test_proxy_multiple_clients'
-    
+    def test_dns_simple(self):
+        server_file = os.path.join(self.topo_dir, 'simple-dns.servers')
+        lsa_file = os.path.join(self.topo_dir, 'simple-dns.lsa')
+        self.run_dns('-r', 'dns.log', '127.0.0.1', self.dnsport, server_file, lsa_file)
+        time.sleep(1)
+
+        [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '127.0.0.1', '127.0.0.1', self.dnsport)
+        print query, response, flags
+
+        self.assertTrue(query == 'video.cs.cmu.edu')
+        self.assertTrue(response == '2.0.0.1')
+        self.assertTrue(flags['sent_trans_id'] == flags['recv_trans_id'])
+        self.assertTrue(flags['qr'] == 1)
+        self.assertTrue(flags['opcode'] == 0)
+        self.assertTrue(flags['aa'] == 1)
+        self.assertTrue(flags['tc'] == 0)
+        self.assertTrue(flags['rd'] == 0)
+        self.assertTrue(flags['ra'] == 0)
+        self.assertTrue(flags['z'] == 0)
+        self.assertTrue(flags['rcode'] == 0)
+        self.assertTrue(flags['num_questions'] == 1)
+        self.assertTrue(flags['num_answers'] == 1)
+        self.assertTrue(flags['num_authority'] == 0)
+        self.assertTrue(flags['num_additional'] == 0)
+        self.assertTrue(flags['qtype'] == 1)
+        self.assertTrue(flags['qclass'] == 1)
+        #self.assertTrue(flags['rr_name'] == 49164) #C0 0C
+        self.assertTrue(flags['rr_qtype'] == 1)
+        self.assertTrue(flags['rr_qclass'] == 1)
+        self.assertTrue(flags['rr_ttl'] == 0)
+        self.assertTrue(flags['rr_dl'] == 4)
+        print 'done test_dns_simple'
+
+    def test_dns_rr(self):
+        server_file = os.path.join(self.topo_dir, 'rr-dns.servers')
+        lsa_file = os.path.join(self.topo_dir, 'rr-dns.lsa')
+        self.run_dns('-r', 'dns.log', '127.0.0.1', self.dnsport, server_file, lsa_file)
+        time.sleep(1)
+
+        servers = ['2.0.0.1', '3.0.0.1', '4.0.0.1', '5.0.0.1', '6.0.0.1']
+        for i in xrange(100):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '127.0.0.1', '127.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response == servers[i%len(servers)])
+
+    def test_dns_lsa_topo1(self):
+        server_file = os.path.join(self.topo_dir, 'topo1.servers')
+        lsa_file = os.path.join(self.topo_dir, 'topo1.lsa')
+        self.run_dns('', 'dns.log', '5.0.0.1', self.dnsport, server_file, lsa_file)
+        time.sleep(1)
+
+        servers = ['3.0.0.1', '4.0.0.1']
+        for i in xrange(5):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '1.0.0.1', '5.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response in servers)
+
+        for i in xrange(5):
+            [query, response, flags] = sendDNSQuery(VIDEO_SERVER_NAME, '2.0.0.1', '5.0.0.1', self.dnsport)
+            print response
+            self.assertTrue(response in servers)
+
+    def test_dns_integration(self):
+        dns = '29.97.92.45'
+        client = '4.2.8.9'
+        servers = ['3.1.4.15', '2.7.1.82']
+        server_file = os.path.join(self.topo_dir, 'topo3.servers')
+        lsa_file = os.path.join(self.topo_dir, 'topo3.lsa')
+        self.run_dns('-r', 'dns.log', dns, self.dnsport, server_file, lsa_file)
+        self.run_proxy('proxy.log', '1', self.proxyport1, client, dns, self.dnsport)
+        time.sleep(1)
+
+        r = self.get('http://%s:%s/vod/big_buck_bunny.f4m' % (client, self.proxyport1))
+        r = self.get('http://%s:%s/vod/1000Seg2-Frag7' %(client, self.proxyport1))
+
+        for entry in self.iter_log('dns.log'):
+            self.assertTrue(entry[1] == client)
+            self.assertTrue(entry[2] == VIDEO_SERVER_NAME)
+            self.assertTrue(entry[3] in servers)
+
+        for entry in self.iter_log('proxy.log'):
+            self.assertTrue(entry[5] in servers)
+
+    def test_writeup_exists(self):
+        self.assertTrue(os.path.isfile(WRITEUP))
+
 def emit_scores(test_results, test_values, test_categories):
 
     # Initialization

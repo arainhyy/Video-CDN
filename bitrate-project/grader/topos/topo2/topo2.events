@@ -1,0 +1,27 @@
+# This file contains a list of link change events to execute in the simulated
+# network. Columns are as follows:
+#
+# <time> <link> <bandwidth> <latency>
+#
+# time: time (in seconds) after the previous event that this event should run
+# 		Floats are ok. The character '*' indicates the event should wait to
+#		run until the user presses enter.
+#
+# link: The link to modify. This must be one of the bottleneck links specified
+#       in your .bottlenecks file. It must be a string of the format
+#       "link<num>" where <num> is an integer between 1-9999 (inclusive).
+#
+# bandwidth: The BW to set. Should include unit (e.g., 1mbit or 500kbit)
+#
+# latency: The artificial latency to impose on the link. Should include unit
+#		   (e.g., 200ms or 1s)
+#
+
+0 link1 100mbit 0ms  # start link BW at 100 mb/s
+0 link2 100mbit 0ms  # start link BW at 100 mb/s
+0 link3 100mbit 0ms  # start link BW at 100 mb/s
+* link1 500kbit 0ms  # press enter to decrease BW to 500 kb/s
+0 link2 500kbit 0ms  # decrease BW to 500 kb/s
+0 link3 500kbit 0ms  # decrease BW to 500 kb/s
+
+# continue with your own test scenarios...

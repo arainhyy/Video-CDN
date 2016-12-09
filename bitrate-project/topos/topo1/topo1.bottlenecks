@@ -1,0 +1,15 @@
+# Each pair of endhosts can be separated by at most one bottleneck link.
+# Multiple pairs of endhosts may share the same bottleneck. Bottleneck links
+# should be named "link<num>" where <num> is an integer from 1 to 9998 
+# (inclusive). You do not need to specify a bottleneck for every pair of 
+# endhosts. Bottlenecks are specified as followed:
+#
+#	<ip1> link<num> <ip2>
+#
+# IP addresses may be specified in any order and do not need to be specified
+# twice (e.g., you do not need both ip1 link1 ip2 AND ip2 link1 ip1).
+
+1.0.0.1 link1 3.0.0.1
+1.0.0.1 link1 4.0.0.1
+2.0.0.1 link1 3.0.0.1
+2.0.0.1 link1 4.0.0.1

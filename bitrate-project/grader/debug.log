@@ -1,0 +1,247 @@
+start listening on port 2445
+fake ip: 4.2.8.9, www ip (null)
+start selecting! nfds: 6
+start selecting! nfds: 6
+bind to fake_ip: 4.2.8.9, sock 8
+open clientfd: 8
+connected to server
+setup proxy outbound conn: 3.1.4.15
+new request, head: 0x24d4490
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from client, client 7 old client len 0
+to extract URI
+request line: GET /vod/big_buck_bunny.f4m HTTP/1.1
+client request /vod/big_buck_bunny.f4m
+chose bitrate 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 98
+Send request to web server 98
+Detailed Send 0x24d4498
+GET /vod/big_buck_bunny_nolist.f4m HTTP/1.1n
+Connection: Close
+User-Agent: curl/7.29.0
+Host: 4.2.8.9:2445
+Accept: */*
+
+ to web server 125
+Send! sock 8, buf 0x24d4498, len 125
+Send success: 125!
+Send completed!
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from web server: server 8, old len 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 5352, client buf 0
+send data to client
+Send! sock 7, buf 0x24de498, len 5352
+Send success: 5352!
+recv data from web server: server 8, old len 5352
+start selecting! nfds: 8
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from client, client 7 old client len 0
+start selecting! nfds: 6
+bind to fake_ip: 4.2.8.9, sock 8
+open clientfd: 8
+connected to server
+setup proxy outbound conn: 2.7.1.82
+new request, head: 0x24d4490
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from client, client 7 old client len 0
+to extract URI
+request line: GET /vod/1000Seg2-Frag7 HTTP/1.1/
+client request /vod/1000Seg2-Frag7
+node: (nil), get bitrate list: vod
+chose bitrate -1
+bind to fake_ip: 4.2.8.9, sock 9
+open clientfd: 9
+connected to server
+setup proxy outbound conn: 3.1.4.15
+get f4m from web server, len 249
+GET /vod/big_buck_bunny.f4m HTTP/1.1
+Host: 2.0.0.1:2445
+Connection: close
+Accept: */*
+Accept-Encoding: gzip, deflate, sdch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36
+
+handle server initiated request!
+handle_conn: node 0x24edab0, server buf 0, client buf 249
+start selecting! nfds: 10
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+node: (nil), get bitrate list: vod
+new bitrate chosen: -1
+handle server initiated request!
+handle_conn: node 0x24edab0, server buf 0, client buf 249
+Send request to web server 249
+Detailed Send 0x24edab8
+GET /vod/big_buck_bunny.f4m HTTP/1.1
+Host: 2.0.0.1:2445
+Connection: close
+Accept: */*
+Accept-Encoding: gzip, deflate, sdch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36
+
+ to web server 249
+Send! sock 9, buf 0x24edab8, len 249
+Send success: 249!
+Send completed!
+start selecting! nfds: 10
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+node: (nil), get bitrate list: vod
+new bitrate chosen: -1
+handle server initiated request!
+handle_conn: node 0x24edab0, server buf 0, client buf 0
+recv data from web server: server 9, old len 0
+start selecting! nfds: 10
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+node: (nil), get bitrate list: vod
+new bitrate chosen: -1
+handle server initiated request!
+handle_conn: node 0x24edab0, server buf 7212, client buf 0
+recv data from web server: server 9, old len 7212
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+node: (nil), get bitrate list: vod
+new bitrate chosen: -1
+client -1, server -1, client buf: GET /vod/big_buck_bunny.f4m HTTP/1.1
+Host: 2.0.0.1:2445
+Connection: close
+Accept: */*
+Accept-Encoding: gzip, deflate, sdch
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36
+
+, f4m doc: 0x24f7ab8, 7212
+content: HTTP/1.1 200 OK
+Date: Tue, 06 Dec 2016 01:05:37 GMT
+Server: Apache/2.2.25 (Unix)
+Content-Length: 7015
+Last-Modified: Fri, 08 Nov 2013 17:45:33 GMT
+Connection: close
+Content-Type: text/xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest xmlns="http://ns.adobe.com/f4m/1.0">
+	<id>
+		10
+	</id>
+	<streamType>
+		recorded
+	</streamType>
+	<duration>
+		596.50133333333338
+	</duration>
+	<bootstrapInfo
+		 profile="named"
+		 id="bootstrap5948"
+	>
+		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
+	</bootstrapInfo>
+	<media
+		 streamId="10"
+		 url="10"
+		 bitrate="10"
+		 bootstrapInfoId="bootstrap5948"
+	>
+		<metadata>
+			AgAKb25NZXRhRGF0YQgAAAAAAAhkdXJhdGlvbgBAgqQCuwz4fgAFd2lkdGgAQIqwAAAAAAAABmhlaWdodABAfgAAAAAAAAAMdmlkZW9jb2RlY2lkAgAEYXZjMQAMYXVkaW9jb2RlY2lkAgAEbXA0YQAKYXZjcHJvZmlsZQBAU0AAAAAAAAAIYXZjbGV2ZWwAQEQAAAAAAAAADnZpZGVvZnJhbWVyYXRlAEA+AAAAAAAAAA9hdWRpb3NhbXBsZXJhdGUAQOdwAAAAAAAADWF1ZGlvY2hhbm5lbHMAQAAAAAAAAAAACXRyYWNraW5mbwoAAAACAwAGbGVuZ3RoAEGJmJzAAAAAAAl0aW1lc2NhbGUAQPX5AAAAAAAACGxhbmd1YWdlAgADdW5kAAAJAwAGbGVuZ3RoAEF7TkAAAAAAAAl0aW1lc2NhbGUAQOdwAAAAAAAACGxhbmd1YWdlAgADZW5nAAAJAAAJ
+		</metadata>
+	</media>
+	<media
+		 streamId="100"
+		 url="100"
+		 bitrate="100"
+		 bootstrapInfoId="bootstrap5948"
+	>
+		<metadata>
+			AgAKb25NZXRhRGF0YQgAAAAAAAhkdXJhdGlvbgBAgqQCuwz4fgAFd2lkdGgAQIqwAAAAAAAABmhlaWdodABAfgAAAAAAAAAMdmlkZW9jb2RlY2lkAgAEYXZjMQAMYXVkaW9jb2RlY2lkAgAEbXA0YQAKYXZjcHJvZmlsZQBAU0AAAAAAAAAIYXZjbGV2ZWwAQEQAAAAAAAAADnZpZGVvZnJhbWVyYXRlAEA+AAAAAAAAAA9hdWRpb3NhbXBsZXJhdGUAQOdwAAAAAAAADWF1ZGlvY2hhbm5lbHMAQAAAAAAAAAAACXRyYWNraW5mbwoAAAACAwAGbGVuZ3RoAEGJmJzAAAAAAAl0aW1lc2NhbGUAQPX5AAAAAAAACGxhbmd1YWdlAgADdW5kAAAJAwAGbGVuZ3RoAEF7TkAAAAAAAAl0aW1lc2NhbGUAQOdwAAAAAAAACGxhbmd1YWdlAgADZW5nAAAJAAAJ
+		</metadata>
+	</media>
+	<media
+		 streamId="500"
+		 url="500"
+		 bitrate="500"
+		 bootstrapInfoId="bootstrap5948"
+	>
+		<metadata>
+			AgAKb25NZXRhRGF0YQgAAAAAAAhkdXJhdGlvbgBAgqQCuwz4fgAFd2lkdGgAQIqwAAAAAAAABmhlaWdodABAfgAAAAAAAAAMdmlkZW9jb2RlY2lkAgAEYXZjMQAMYXVkaW9jb2RlY2lkAgAEbXA0YQAKYXZjcHJvZmlsZQBAU0AAAAAAAAAIYXZjbGV2ZWwAQEQAAAAAAAAADnZpZGVvZnJhbWVyYXRlAEA+AAAAAAAAAA9hdWRpb3NhbXBsZXJhdGUAQOdwAAAAAAAADWF1ZGlvY2hhbm5lbHMAQAAAAAAAAAAACXRyYWNraW5mbwoAAAACAwAGbGVuZ3RoAEGJmJzAAAAAAAl0aW1lc2NhbGUAQPX5AAAAAAAACGxhbmd1YWdlAgADdW5kAAAJAwAGbGVuZ3RoAEF7TkAAAAAAAAl0aW1lc2NhbGUAQOdwAAAAAAAACGxhbmd1YWdlAgADZW5nAAAJAAAJ
+		</metadata>
+	</media>
+	<media
+		 streamId="1000"
+		 url="1000"
+		 bitrate="1000"
+		 bootstrapInfoId="bootstrap5948"
+	>
+		<metadata>
+			AgAKb25NZXRhRGF0YQgAAAAAAAhkdXJhdGlvbgBAgqQCuwz4fgAFd2lkdGgAQIqwAAAAAAAABmhlaWdodABAfgAAAAAAAAAMdmlkZW9jb2RlY2lkAgAEYXZjMQAMYXVkaW9jb2RlY2lkAgAEbXA0YQAKYXZjcHJvZmlsZQBAU0AAAAAAAAAIYXZjbGV2ZWwAQEQAAAAAAAAADnZpZGVvZnJhbWVyYXRlAEA+AAAAAAAAAA9hdWRpb3NhbXBsZXJhdGUAQOdwAAAAAAAADWF1ZGlvY2hhbm5lbHMAQAAAAAAAAAAACXRyYWNraW5mbwoAAAACAwAGbGVuZ3RoAEGJmJzAAAAAAAl0aW1lc2NhbGUAQPX5AAAAAAAACGxhbmd1YWdlAgADdW5kAAAJAwAGbGVuZ3RoAEF7TkAAAAAAAAl0aW1lc2NhbGUAQOdwAAAAAAAACGxhbmd1YWdlAgADZW5nAAAJAAAJ
+		</metadata>
+	</media>
+</manifest>
+
+set bitrate list: /vod/1000Seg2-Frag7
+set new bitrate list: vod
+bitrate list header modified
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+node: 0x2504230, get bitrate list: vod
+bitrate result: chosen 10, now 0
+new bitrate chosen: 10
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 94
+Send request to web server 94
+Detailed Send 0x24d4498
+GET /vod/10Seg2-Frag7 HTTP/1.1
+Connection: Close
+User-Agent: curl/7.29.0
+Host: 4.2.8.9:2445
+Accept: */*
+
+ to web server 112
+Send! sock 8, buf 0x24d4498, len 112
+Send success: 112!
+Send completed!
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from web server: server 8, old len 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 21888, client buf 0
+send data to client
+Send! sock 7, buf 0x24de498, len 21888
+Send success: 21888!
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 0, client buf 0
+recv data from web server: server 8, old len 0
+start selecting! nfds: 9
+handle client initiated request!
+handle_conn: node 0x24d4490, server buf 7533, client buf 0
+send data to client
+Send! sock 7, buf 0x24de498, len 7533
+Send success: 7533!
+recv data from web server: server 8, old len 7533
+start selecting! nfds: 8
