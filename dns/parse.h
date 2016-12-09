@@ -22,6 +22,7 @@ typedef struct _node {
 
 void init();
 int parse_LSA_file(char* file_name);
+void add_reverse_neighbor(node* n, node* neighbor);
 int parse_server_file(char* file_name);
 node* add_node_by_ip_with_num(char* ip, node** _header, int* num);
 node* exist_in_list(char* ip, node** _header);

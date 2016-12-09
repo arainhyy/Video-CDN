@@ -62,6 +62,7 @@ int parse_LSA_file(char* file_name) {
         if (this_neighbor == NULL) {
           this_neighbor = add_node_by_ip_with_num(neighbor, &nodes, &total_num);
         }
+        add_reverse_neighbor(this_neighbor, now);
         now->neighbors[i] = this_neighbor;
         neighbor = strtok(NULL, ",");
       }
@@ -153,4 +154,27 @@ node* exist_in_list(char* ip, node** _header) {
     pt = pt->next;
   }
   return NULL;
+}
+
+/**
+ * Add node neighbor to neighbor list of node n.
+ * @param n
+ * @param neighbor
+ */
+void add_reverse_neighbor(node* n, node* neighbor) {
+  // First check this neighbor has not been saved yet.
+  int i = 0;
+  for (; i < n->neighbor_num; i++) {
+    if (neighbor == n->neighbors[i]) return;
+  }
+  // Or else build a new neighbor list for this node and add this new neighbor.
+  n->neighbor_num++;
+  node** new_neighbors = (node*) malloc(sizeof(node*) * n->neighbor_num);
+  i = 0;
+  for (; i < n->neighbor_num - 1; i++) {
+    new_neighbors[i] = n->neighbors[i];
+  }
+  new_neighbors[n->neighbor_num - 1] = neighbor;
+  free(n->neighbors);
+  n->neighbors = new_neighbors;
 }

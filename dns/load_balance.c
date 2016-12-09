@@ -22,6 +22,7 @@ int build_routing_table() {
   if (client_num <= 0 || server_num <= 0 || total_num <= 0 || nodes == NULL || servers == NULL || clients == NULL) {
     return 1;
   }
+
   routing_table = (routing_table_entry*) malloc(sizeof(routing_table_entry) * client_num);
 
   node* client = nodes;
@@ -41,14 +42,16 @@ int build_routing_table() {
     header.prev = NULL;
     tail.prev = &header;
     strcpy(routing_table[cnt].client_ip, client->ip);
-	puts("before bfs");
     char* server_ip = bfs(&client, &header, &tail);
-	puts("after bfs");
-    strcpy(routing_table[cnt++].server_ip, server_ip);
+    if (server_ip != NULL) {
+      strcpy(routing_table[cnt++].server_ip, server_ip);
+    } else {
+      // If it can not find a nearest server, just use the first server as default server.
+      strcpy(routing_table[cnt++].server_ip, servers->ip);
+    }
     client = client->next;
-	puts("after update client");
+    printf("client ip: %s server ip: %s\n", client->ip, server_ip);
   }
-  puts("exit while loop");
   return 0;
 }
 
