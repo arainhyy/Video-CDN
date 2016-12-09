@@ -120,7 +120,9 @@ static int nameserver_run() {
         }
         // recv the udp packet
         char request[DNS_MSG_MAX_LEN] = {0};
-        int size = recv(sock, request, DNS_MSG_MAX_LEN, 0);
+		struct sockaddr_in client_sock_addr;
+		socklen_t client_sock_len;
+        int size = recvfrom(sock, request, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
         if (size < 0) {
             perror("nameserver_run recv");
             retval = -1;
@@ -129,10 +131,23 @@ static int nameserver_run() {
         // parse the request
         char qname[512] = {0};
         retval = dns_parse_request(request, size, qname);
+		puts("9");
+        unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request)); // TODO: check here, might not be ok
+		printf("dns_id: %d\n", dns_id);
+		client_sock_len = sizeof(client_sock_addr);
+
         if (retval < 0) {
+			printf("parse request error\n");
+			// generate response and send
+			char packet[DNS_MSG_MAX_LEN + 1] = {0};
+			size = dns_gen_response(qname, NULL, dns_id, 1, packet);
+			printf("generate packet result: %d\n", size);
+			// TODO
+			printf("client sockaddr: %u\n", client_sock_addr);
+			size = sendto(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
+			printf("sendto result: %d\n", size);
             break;
         }
-        unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request)); // TODO: check here, might not be ok
 
         // TODO(hanlins): use server_ip to reply request from client.
         //************************************************************
@@ -159,11 +174,13 @@ static int nameserver_run() {
         // construct udp packet to send
         char packet[DNS_MSG_MAX_LEN + 1] = {0};
         size = dns_gen_response(qname, server_ip, dns_id, 0, packet);
+		printf("response size: %d\n", size);;
         // keep logging
         time_t now;
         time(&now);
         log_record(config.log_file, now, client_ip, qname, server_ip);
-        send(sock, packet, size, 0);
+        sendto(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
+		puts("10");
         // end of handling iteration
     }
     close_logger();

@@ -57,6 +57,7 @@ typedef struct dns_resource {
 #define DNS_SET_ID(header, id) ((header)->id = htons(id))
 #define DNS_SET_QDCOUNT(header, q) ((header)->qdcount = htons(q)) // number of questions
 #define DNS_SET_ANCOUNT(header, a) ((header)->ancount = htons(a)) // number of answers
+#define DNS_SET_RCODE(header) (DNS_SET_FLAG(header, (1 << 12)))
 
 /* QUESTION */
 #define DNS_GET_QTYPE(question) (ntohs(question->qtype))

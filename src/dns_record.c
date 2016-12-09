@@ -170,16 +170,21 @@ int generate_resource(const char *query, const char *ip, char *result) {
 int dns_isinvalid(dns_header_t *header, int is_request) {
     if (is_request) {
         if (DNS_CHECK_FLAG(header, DNS_FLAG_QR)) {
+			puts("QR error");
             return -1;
         }
         if (DNS_CHECK_FLAG(header, DNS_FLAG_AA)) {
+			puts("AA error");
             return -1;
         }
         // make sure that no answer and only one question
         if (DNS_GET_QDCOUNT(header) != 1) {
+			puts("QD error");
+			printf("QD: %d\n", DNS_GET_QDCOUNT(header));
             return -1;
         }
         if (DNS_GET_ANCOUNT(header) < 0) {
+			puts("AN error");
             return -1;
         }
     }
@@ -223,6 +228,7 @@ int dns_parse_request(const char *buf, int size, char *result) {
     dns_header_t *header = result;
     // check whether response, if not then return negative
     if (dns_isinvalid(header, 1)) {
+		puts("DNS req invalid");
         return -1;
     }
     int offset = 0 + sizeof(dns_header_t);
@@ -240,6 +246,11 @@ int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, in
     dns_header_t *header = result;
     dns_header_init(header, dns_id);
     uint16_t flags = DNS_FLAG_QR | DNS_FLAG_AA;
+	if (rcode != 0) {
+		DNS_SET_RCODE(header);
+		DNS_SET_FLAG(header, flags);
+		return sizeof(dns_header_t);
+	}
     DNS_SET_FLAG(header, flags);
     DNS_SET_QDCOUNT(header, 1);
     DNS_SET_ANCOUNT(header, 1);
