@@ -43,8 +43,12 @@ static int nameserver_setup_listen() {
     fd_max = sock + 1;
     // initialize address
     struct sockaddr_in nameserver_addr;
+	bzero(&nameserver_addr, sizeof(nameserver_addr));
     nameserver_addr.sin_family = AF_INET;
-    inet_pton(AF_INET, config.ip, &(nameserver_addr.sin_addr));
+    //inet_pton(AF_INET, config.ip, &(nameserver_addr.sin_addr));
+	struct in_addr ns_inaddr;
+    inet_aton(config.ip, &ns_inaddr);
+    nameserver_addr.sin_addr = ns_inaddr;
     nameserver_addr.sin_port = htons(config.listen_port);
     // bind to address
     if (bind(sock, (struct sockaddr *) (&nameserver_addr), sizeof(struct sockaddr_in)) < 0) {
@@ -76,6 +80,19 @@ int main(int argc, char *argv[]) {
     log_init(config.log_file);
     // run nameserver
     return nameserver_run();
+}
+
+int sendto_wrap(int sock, char* buf, size_t size, int flag, struct sockaddr *addr, socklen_t addr_len) {
+	int offset = 0;
+	while ((size - offset) > 0) {
+		int ret = sendto(sock, buf + offset, size - offset, flag, addr, addr_len);
+		if (ret < 0) {
+			perror("sendto");
+			return -1;
+		}
+		offset += ret;
+	}
+	return offset;
 }
 
 static int nameserver_run() {
@@ -120,9 +137,17 @@ static int nameserver_run() {
         }
         // recv the udp packet
         char request[DNS_MSG_MAX_LEN] = {0};
+		printf("request pt: %p\n", request);
 		struct sockaddr_in client_sock_addr;
 		socklen_t client_sock_len;
+		client_sock_len = sizeof(client_sock_addr);
         int size = recvfrom(sock, request, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
+		printf("recv:\n");
+		printf("%d\n", request[0]);
+		printf("%d\n", request[4]);
+		printf("%d\n", request[8]);
+		printf("%d\n", request[12]);
+		puts("===end===");
         if (size < 0) {
             perror("nameserver_run recv");
             retval = -1;
@@ -130,12 +155,15 @@ static int nameserver_run() {
         }
         // parse the request
         char qname[512] = {0};
-        retval = dns_parse_request(request, size, qname);
+        //retval = dns_parse_request(request, size, qname);
+        int retval2 = dns_parse_request(request, size, qname);
+		printf("retval: %d\n", retval2);
 		puts("9");
         unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request)); // TODO: check here, might not be ok
 		printf("dns_id: %d\n", dns_id);
 		client_sock_len = sizeof(client_sock_addr);
 
+		printf("retval: %d\n", retval);
         if (retval < 0) {
 			printf("parse request error\n");
 			// generate response and send
@@ -144,8 +172,12 @@ static int nameserver_run() {
 			printf("generate packet result: %d\n", size);
 			// TODO
 			printf("client sockaddr: %u\n", client_sock_addr);
-			size = sendto(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
+			printf("client ip: %s\n", inet_ntoa(client_sock_addr.sin_addr));
+			size = sendto_wrap(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), client_sock_len);
 			printf("sendto result: %d\n", size);
+			if (size < 0) {
+				perror("sendto");
+			}
             break;
         }
 
@@ -179,7 +211,7 @@ static int nameserver_run() {
         time_t now;
         time(&now);
         log_record(config.log_file, now, client_ip, qname, server_ip);
-        sendto(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), &client_sock_len);
+        sendto_wrap(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), client_sock_len);
 		puts("10");
         // end of handling iteration
     }

@@ -168,12 +168,17 @@ int generate_resource(const char *query, const char *ip, char *result) {
 }
 
 int dns_isinvalid(dns_header_t *header, int is_request) {
+    char *pt = header;
+	printf("%01x\n", pt[0]);
+	printf("%01x\n", pt[1]);
+	printf("%01x\n", pt[2]);
+	printf("%01x\n", pt[3]);
     if (is_request) {
-        if (DNS_CHECK_FLAG(header, DNS_FLAG_QR)) {
+        if (DNS_CHECK_FLAG(header, DNS_FLAG_QR) != 0) {
 			puts("QR error");
             return -1;
         }
-        if (DNS_CHECK_FLAG(header, DNS_FLAG_AA)) {
+        if (DNS_CHECK_FLAG(header, DNS_FLAG_AA) != 0) {
 			puts("AA error");
             return -1;
         }
@@ -188,7 +193,7 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
             return -1;
         }
     }
-    if (!is_request) {
+    else {
         if (!DNS_CHECK_FLAG(header, DNS_FLAG_QR)) {
             return -1;
         }
@@ -205,27 +210,36 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
     }
     // check RD, RA, Z
     if (DNS_CHECK_FLAG(header, DNS_FLAG_RD)) {
+		puts("flags error 1");
         return -1;
     }
     if (DNS_CHECK_FLAG(header, DNS_FLAG_RA)) {
+		puts("flags error 2");
         return -1;
     }
     if (DNS_CHECK_FLAG(header, DNS_FLAG_Z)) {
-        return -1;
+		puts("flags error 3");
+        // return -1; // TODO: fix this
     }
     if (header->nscount != 0) {
+		puts("nscount error");
         return -1;
     }
     if (header->arcount != 0) {
+		puts("arcount error");
         return -1;
     }
+	puts("the request is valid");
+	puts("???!!!???!!!");
     return 0;
+	puts("#### not seen");
 }
 
 // server part
 int dns_parse_request(const char *buf, int size, char *result) {
     // parse header
-    dns_header_t *header = result;
+    dns_header_t *header = buf;
+	printf("header pt: %p\n", header);
     // check whether response, if not then return negative
     if (dns_isinvalid(header, 1)) {
 		puts("DNS req invalid");
@@ -241,16 +255,19 @@ int dns_parse_request(const char *buf, int size, char *result) {
 }
 
 int dns_gen_response(const char *query, const char *ip_addr, uint16_t dns_id, int rcode, char *result) {
+	puts("dns generate response");
     int offset = 0;
     // init header
     dns_header_t *header = result;
     dns_header_init(header, dns_id);
     uint16_t flags = DNS_FLAG_QR | DNS_FLAG_AA;
 	if (rcode != 0) {
+		puts("rcode != 0");
 		DNS_SET_RCODE(header);
 		DNS_SET_FLAG(header, flags);
 		return sizeof(dns_header_t);
 	}
+	puts("set flags");
     DNS_SET_FLAG(header, flags);
     DNS_SET_QDCOUNT(header, 1);
     DNS_SET_ANCOUNT(header, 1);
