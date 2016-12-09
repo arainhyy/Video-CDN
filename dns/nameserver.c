@@ -118,6 +118,7 @@ static int nameserver_run() {
 	puts("7");
 
     int retval = 0;
+	node *round_robin_pt = servers;
     while (1) {
 		puts("8");
         // copy fd set for select
@@ -182,7 +183,6 @@ static int nameserver_run() {
         char *server_ip;
         char *client_ip; // Get this from deserialized packet.
 
-        node *round_robin_pt = servers;
         if (config.is_round_robin) {
             server_ip = round_robin_pt->ip;
             round_robin_pt = round_robin_pt->next;
