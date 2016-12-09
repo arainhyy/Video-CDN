@@ -3,17 +3,26 @@
 #include <sys/socket.h>
 
 static int dns_id = 5, dns_sock = 0;
-static struct sockaddr_in dns_addr;
+static struct sockaddr_in dns_addr, proxy_addr;
 
-int init_mydns(const char *dns_ip, unsigned int dns_port) {
+int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip) {
+	memset(&dns_addr, 0, sizeof(dns_addr));
+	memset(&proxy_addr, 0, sizeof(proxy_addr));
     // bind to the assigned ip address : port
     struct in_addr dns_ip_addr;
+	memset(&dns_ip_addr, 0, sizeof(dns_ip_addr));
     inet_aton(dns_ip, &dns_ip_addr);
-
     dns_addr.sin_family = AF_INET;
-    dns_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     dns_addr.sin_port = htons(dns_port);
     dns_addr.sin_addr = dns_ip_addr;
+	// set proxy addr for binding
+    struct in_addr proxy_ip_addr;
+	memset(&proxy_ip_addr, 0, sizeof(proxy_ip_addr));
+    inet_aton(my_ip, &proxy_ip_addr);
+    proxy_addr.sin_family = AF_INET;
+    proxy_addr.sin_port = htons(0); // any port
+    proxy_addr.sin_addr = proxy_ip_addr;
+
     // open socket
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
@@ -21,13 +30,14 @@ int init_mydns(const char *dns_ip, unsigned int dns_port) {
         return sock;
     }
     // bind to address
-    int ret = bind(sock, (struct sockaddr *) (&dns_addr), sizeof(struct sockaddr_in));
+    int ret = bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr_in));
     if (ret < 0) {
         close(sock);
         perror("init_mydns bind");
         return ret;
     }
     dns_sock = sock;
+	printf("dns socket: %d\n", dns_sock);
     return sock;
 }
 
@@ -36,13 +46,16 @@ int resolve(const char *node, const char *service,
 	printf("resolve service: %s\n", service);
     char packet[DNS_MSG_MAX_LEN] = {0};
     int size = dns_generate_request(node, dns_id, packet);
+	printf("generate dns request result: %d\n", size);
     int ret = sendto(dns_sock, packet, size, 0, (struct sockaddr*) (&dns_addr), sizeof(dns_addr));
     if (ret < 0) {
         perror("resolve sendto");
         return -1;
     }
+	memset(packet, 0, sizeof(packet));
     int len = sizeof(dns_addr);
     size = recvfrom(dns_sock, packet, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&dns_addr), (socklen_t *) (&len));
+	printf("recv size: %d\n", size);
     if (size < 0) {
         perror("resolve recvfrom");
         return -1;

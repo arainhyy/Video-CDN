@@ -107,7 +107,7 @@ void proxy_init_config(char **argv, int www_ip) {
         config.need_dns = 0;
     } else {
         // otherwise, not use hard-coded ip addr
-        init_mydns(argv[5], argv[6]);
+        init_mydns(argv[5], argv[6], argv[4]);
         config.need_dns = 1;
     }
     config.list_conn = NULL;
