@@ -304,6 +304,7 @@ int dns_parse_response(const char *response, int size, struct in_addr *result) {
     dns_header_t *header = response;
     // check whether response, if not then return negative
     if (dns_isinvalid(header, 0)) {
+		puts("### dns response invalid");
         return -1;
     }
     if (DNS_CHECK_FLAG(header, DNS_FLAG_RCODE) != 0) {

@@ -156,7 +156,7 @@ static int nameserver_run() {
 		printf("qname: %s\n", qname);
 		printf("retval: %d\n", retval2);
 		puts("9");
-        unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request)); // TODO: check here, might not be ok
+        unsigned short dns_id = DNS_GET_ID((dns_header_t*)(request));
 		printf("dns_id: %d\n", dns_id);
 		client_sock_len = sizeof(client_sock_addr);
 
@@ -181,7 +181,7 @@ static int nameserver_run() {
         // TODO(hanlins): use server_ip to reply request from client.
         //************************************************************
         char *server_ip;
-        char *client_ip; // Get this from deserialized packet.
+        char *client_ip = inet_ntoa(client_sock_addr.sin_addr); // Get this from deserialized packet.
 
         if (config.is_round_robin) {
             server_ip = round_robin_pt->ip;
@@ -191,18 +191,24 @@ static int nameserver_run() {
             }
         } else {
             int i;
+			printf("client_num: %d\n", client_num);
             for (i = 0; i < client_num; i++) {
+				puts("9.1");
+				//puts(routing_table[i].client_ip);
+				printf("client_ip: %p\n", client_ip);
+				puts(client_ip);
                 if (strcmp(routing_table[i].client_ip, client_ip)) {
                     server_ip = routing_table[i].server_ip;
                     break;
                 }
             }
+			puts("9.2");
         }
         //************************************************************
         // construct udp packet to send
         char packet[DNS_MSG_MAX_LEN + 1] = {0};
         size = dns_gen_response(qname, server_ip, dns_id, 0, packet);
-		printf("response size: %d\n", size);;
+		printf("response size: %d\n", size);
         // keep logging
         time_t now;
         time(&now);
