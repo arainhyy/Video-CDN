@@ -23,12 +23,13 @@ int build_routing_table() {
     return 1;
   }
 
-  routing_table = (routing_table_entry*) malloc(sizeof(routing_table_entry) * client_num);
+  routing_table = (routing_table_entry*) malloc(sizeof(routing_table_entry) * total_num);
 
   node* client = nodes;
   int cnt = 0;
   while (client) {
     puts("while client");
+    strcpy(routing_table[cnt].client_ip, client->ip);
     if (exist_in_list(client->ip, &servers) || client->ip[0] == 'r' || client->neighbor_num == 0) {
       client = client->next;
       continue;
@@ -41,7 +42,6 @@ int build_routing_table() {
     tail.next = NULL;
     header.prev = NULL;
     tail.prev = &header;
-    strcpy(routing_table[cnt].client_ip, client->ip);
     char* server_ip = bfs(&client, &header, &tail);
     if (server_ip != NULL) {
       strcpy(routing_table[cnt++].server_ip, server_ip);
