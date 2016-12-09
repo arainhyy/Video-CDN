@@ -90,6 +90,17 @@ int parse_server_file(char* file_name) {
     add_node_by_ip_with_num(node_ip, &servers, &server_num);
   }
   fclose(f);
+  // Reverse server list.
+  node* pt = servers;
+  node* next;
+  node* pre = NULL;
+  while (pt) {
+    next = pt->next;
+    pt->next = pre;
+    pre = pt;
+    pt = next;
+  }
+  servers = pre;
   return 0;
 }
 
