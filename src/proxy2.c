@@ -21,6 +21,7 @@ proxy_config_t config; // make it available for testing
 ip_tpt_t *ip_tpt_list = NULL;
 
 unsigned long get_mill_time();
+
 /**
  * @brief Setup proxy til listen stage.
  *
@@ -101,7 +102,6 @@ void proxy_init_config(char **argv, int www_ip) {
     config.dns_port = atoi(argv[6]);
     config.www_ip.s_addr = (long) -1;
     if (www_ip == 1) {
-		puts("has www_ip");
         inet_aton(argv[7], &config.www_ip);
         config.www_ip_str = argv[7];
         config.need_dns = 0;
@@ -112,12 +112,9 @@ void proxy_init_config(char **argv, int www_ip) {
     }
     config.list_conn = NULL;
     config.default_list = NULL;
-    // init the dns setting on client
-//	log_init(config.log);
 }
 
 int proxy_conn_create(int sock, proxy_conn_t *conn) {
-    puts("enter conn create");
     proxy_conn_init(conn);
     // init browser struct
     struct sockaddr_in browser_addr;
@@ -131,8 +128,7 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     }
     // set browser's fd
     conn->browser.fd = browser_sock;
-	FD_SET(browser_sock, &config.ready);
-	printf("fdset: %d\n", browser_sock);
+    FD_SET(browser_sock, &config.ready);
     if (browser_sock >= config.fd_max) {
         config.fd_max = browser_sock + 1;
     }
@@ -141,27 +137,23 @@ int proxy_conn_create(int sock, proxy_conn_t *conn) {
     strcpy(conn->browser.ip, ip);
     printf("-------browser.ip--%s\n", conn->browser.ip);
     if (ip_tpt_find(conn->browser.ip) > 0) {
-      conn->T_curr = ip_tpt_find(conn->browser.ip)->tpt;
+        conn->T_curr = ip_tpt_find(conn->browser.ip)->tpt;
     }
-    printf("tcurr init:%lu\n", conn->T_curr);
     // insert to list
     proxy_insert_conn(conn);
     return 0;
 }
 
 void proxy_conn_close(proxy_conn_t *conn) {
-    printf("remove conn %d\n", conn->browser.fd);
     // close sockets, browser, server
     if (conn->browser.fd != 0) {
         close(conn->browser.fd);
         FD_CLR(conn->browser.fd, &config.ready);
-		printf("fdclr: %d\n", conn->browser.fd);
         conn->browser.fd = 0;
     }
     if (conn->server.fd != 0) {
         close(conn->server.fd);
         FD_CLR(conn->server.fd, &config.ready);
-		printf("fdclr: %d\n", conn->server.fd);
         conn->server.fd = 0;
     }
     // remove from conn list
@@ -169,16 +161,6 @@ void proxy_conn_close(proxy_conn_t *conn) {
 }
 
 int proxy_run() {
-    // bind to ip
-    // INADDR_ANY
-    // This allowed your program to work without knowing the IP address of
-    // the machine it was running on, or, in the case of a machine with
-    // multiple network interfaces, it allowed your server to receive packets
-    // destined to any of the interfaces. In reality, the semantics of INADDR_ANY
-    // are more complex and involved.
-    //
-    // search result from:
-    // https://www.cs.cmu.edu/~srini/15-441/F01.full/www/assignments/P2/htmlsim_split/node18.html
     int sock = proxy_setup_listen();
 
     if (sock < 0) {
@@ -198,7 +180,6 @@ int proxy_run() {
             break;
         }
         if (ready_num == 0) {
-            puts("should not happen since timeout not set");
             continue;
         }
         // now ready_num must larger than 0
@@ -245,7 +226,6 @@ int proxy_run() {
 static int proxy_setup_listen() {
     FD_ZERO(&config.ready);
     // create socket ipv4
-//    int sock = socket(AF_INET, SOCK_STREAM, PF_INET);
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("proxy_setup_listen socket");
@@ -253,7 +233,7 @@ static int proxy_setup_listen() {
     }
     // set sock for incoming connections
     FD_SET(sock, &config.ready);
-	printf("listen to fd %d\n", sock);
+    printf("listen to fd %d\n", sock);
     config.fd_max = sock + 1;
     // initialize address
     struct sockaddr_in proxy_addr;
@@ -274,12 +254,10 @@ static int proxy_setup_listen() {
 }
 
 static int proxy_connect_server(proxy_conn_t *conn) {
-	puts("connect server");
     // initialize address
     struct sockaddr_in proxy_addr;
     memset(&proxy_addr, 0, sizeof(struct sockaddr_in));
     proxy_addr.sin_family = AF_INET;
-//    proxy_addr.sin_addr.s_addr = config.fake_ip.s_addr; // specified in handout
     proxy_addr.sin_addr.s_addr = inet_addr(config.fake_ip_str);
     proxy_addr.sin_port = htons(0); // ephemeral
 
@@ -288,7 +266,6 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(8080);
     if (config.www_ip.s_addr != -1) {
-//        server_addr.sin_addr.s_addr = config.www_ip.s_addr;
         server_addr.sin_addr.s_addr = inet_addr(config.www_ip_str);
     }
     // create socket ipv4
@@ -300,37 +277,33 @@ static int proxy_connect_server(proxy_conn_t *conn) {
     }
     int ret = bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr));
     if (ret < 0) {
-		puts("bind error!");
         perror("proxy_connect_server bind");
         close(sock);
         return -1;
     }
-	// try to resolve now
-	puts("try to resolve now");
+    // try to resolve now
     if (config.need_dns) {
         // use dns function to get the ip
         struct addrinfo *addr_result;
         ret = resolve("video.cs.cmu.edu", "8080", NULL, &addr_result);
         if (ret >= 0) {
-            server_addr.sin_addr = ((struct sockaddr_in*)addr_result->ai_addr)->sin_addr;
+            server_addr.sin_addr = ((struct sockaddr_in *) addr_result->ai_addr)->sin_addr;
             free(addr_result);
             ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
         }
-        strcpy(conn->server_ip, inet_ntoa(((struct sockaddr_in *)(addr_result -> ai_addr)) -> sin_addr));
+        strcpy(conn->server_ip, inet_ntoa(((struct sockaddr_in *) (addr_result->ai_addr))->sin_addr));
         // otherwise just return ret < 0
     } else {
         ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
         strcpy(conn->server_ip, inet_ntoa(server_addr.sin_addr));
     }
     if (ret < 0) {
-		puts("connection error!");
         perror("proxy_connect_server connect");
         close(sock);
         return -1;
     }
     // init server in conn
     FD_SET(sock, &config.ready);
-	printf("fdset: %d\n", sock);
     if (sock >= config.fd_max) {
         config.fd_max = sock + 1;
     }
@@ -389,15 +362,14 @@ static int handler_browser(proxy_conn_t *conn) {
     conn->browser.type = check_type(conn->browser.request);
     // connect to server
     if (conn->server.fd < 0) {
-		puts("conn server fail");
         return -1;
     }
-	printf("req type: %d\n", conn->browser.type);
+    printf("req type: %d\n", conn->browser.type);
     // check whether it is chunk request, set flag
     int ret = -1;
     if (conn->browser.type == REQ_CHUNK) {
         if (conn->bitrate_list == NULL) {
-          conn->bitrate_list = dup_bitrate_list(config.default_list);
+            conn->bitrate_list = dup_bitrate_list(config.default_list);
         }
         printf("tcurr %s before select: %lu\n", conn->browser.ip, conn->T_curr);
         conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
@@ -412,13 +384,13 @@ static int handler_browser(proxy_conn_t *conn) {
     } else if (conn->browser.type == REQ_F4M) {
         // save f4m
         memcpy(conn->server.f4m_request, conn->browser.buf + old_offset, recvlen);
-		puts("-----------------REQ_F4M_MSG---------------");
-		int i = 0;
-		for (; i < recvlen; i++) {
-			printf("%c", conn->server.f4m_request[i]);
-		}
-		puts("");
-		puts("-----------------REQ_F4M_MSG---------------");
+        puts("-----------------REQ_F4M_MSG---------------");
+        int i = 0;
+        for (; i < recvlen; i++) {
+            printf("%c", conn->server.f4m_request[i]);
+        }
+        puts("");
+        puts("-----------------REQ_F4M_MSG---------------");
         ret = proxy_req_forward(conn);
     } else {
         ret = proxy_req_forward(conn);
@@ -442,7 +414,6 @@ static int handler_browser(proxy_conn_t *conn) {
             break;
     }
     clear_parsed_request(conn, IS_BROWSER);
-    puts("end handle browser");
     return ret;
 }
 
@@ -458,10 +429,9 @@ static int handler_server(proxy_conn_t *conn) {
     conn->server.offset += recvlen;
     int ret = 0;
     while (conn->server.offset > 0 && (conn->server.request == NULL || conn->server.request->status != NEEDMORE)
-        && ret != -1) {
+           && ret != -1) {
         // check if it has sent all content body of last request to client.
         if (conn->server.to_send_length > 0) {
-            puts("enter read body");
             int to_send = conn->server.to_send_length > conn->server.offset ?
                           conn->server.offset : conn->server.to_send_length;
             int old_len_body = conn->server.request->content_length - conn->server.to_send_length;
@@ -473,10 +443,9 @@ static int handler_server(proxy_conn_t *conn) {
             if (conn->server.offset > 0) {
                 memmove(conn->server.buf, conn->server.buf + to_send, conn->server.offset);
             }
-            puts("leave read body");
         }
-        if (conn->server.request != NULL && conn->server.request->status != NEEDMORE && conn->server.to_send_length == 0) {
-            puts("enter handle request");
+        if (conn->server.request != NULL && conn->server.request->status != NEEDMORE &&
+            conn->server.to_send_length == 0) {
 
             switch (conn->state) {
                 case HTML:
@@ -495,7 +464,8 @@ static int handler_server(proxy_conn_t *conn) {
                     puts("----------------RESP_CHUNK-----------------");
                     ret = handle_resp_chunk(conn);
                     break;
-                default:ret = -1;
+                default:
+                    ret = -1;
             }
             if (conn->server.response_body != NULL) {
                 free(conn->server.response_body);
@@ -527,7 +497,6 @@ static int handler_server(proxy_conn_t *conn) {
                     conn->server.offset);
         }
     }
-    puts("Finish handle server");
     return ret;
 }
 
@@ -585,25 +554,24 @@ unsigned long get_mill_time();
  * @param chunk_size
  */
 void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
-  unsigned long t_finish = get_mill_time();
-  // Exchange T to Kbps.
-  unsigned long duration = t_finish - conn->t_s;
-  float diff = duration / 1000.0;
-  unsigned long T = ((chunk_size / diff) / 1000) * 8;
-  unsigned long Tcurrent;
-  ip_tpt_t *tpt = ip_tpt_find(conn->browser.ip);
-  if (!tpt) {
-    ip_tpt_add(conn->browser.ip, 0);
-  }
-  Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
-  Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
-  conn->T_curr = (int) Tcurrent;
-  // save to history
-  ip_tpt_add(conn->browser.ip, Tcurrent);
-  replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
-  //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
-  log_record(config.log, t_finish / 1000, diff, T, Tcurrent, conn->bitrate,
-             conn->server_ip, conn->server.chunk_name);
+    unsigned long t_finish = get_mill_time();
+    // Exchange T to Kbps.
+    unsigned long duration = t_finish - conn->t_s;
+    float diff = duration / 1000.0;
+    unsigned long T = ((chunk_size / diff) / 1000) * 8;
+    unsigned long Tcurrent;
+    ip_tpt_t *tpt = ip_tpt_find(conn->browser.ip);
+    if (!tpt) {
+        ip_tpt_add(conn->browser.ip, 0);
+    }
+    Tcurrent = ip_tpt_find(conn->browser.ip)->tpt;
+    Tcurrent = config.alpha * T + (1.0 - config.alpha) * Tcurrent;
+    conn->T_curr = (int) Tcurrent;
+    // save to history
+    ip_tpt_add(conn->browser.ip, Tcurrent);
+    replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
+    log_record(config.log, t_finish / 1000, diff, T, Tcurrent, conn->bitrate,
+               conn->server_ip, conn->server.chunk_name);
 }
 
 /* Get timestamp in milliseconds. */
@@ -618,10 +586,9 @@ int proxy_req_forward(proxy_conn_t *conn) {
     // forward request directly
     char buf[MAX_REQ_SIZE] = {0};
     int len = construct_http_req(buf, conn->browser.request);
-  char tmp_req[MAX_REQ_SIZE];
-  memmove(tmp_req, buf, len);
-  tmp_req[len] = '\0';
-  printf("send non chunk request: %s\n", tmp_req);
+    char tmp_req[MAX_REQ_SIZE];
+    memmove(tmp_req, buf, len);
+    tmp_req[len] = '\0';
     return send_data(conn->server.fd, buf, len);
 }
 
@@ -641,7 +608,7 @@ static int handle_resp_f4m(proxy_conn_t *conn) {
     // 1. parse xml and get list of bitrates
     conn->bitrate_list = parse_xml_to_list(conn->server.response_body);
     if (config.default_list == NULL) {
-      config.default_list = dup_bitrate_list(conn->bitrate_list);
+        config.default_list = dup_bitrate_list(conn->bitrate_list);
     }
     // 2. request for nolist version
     replace_f4m_to_nolist(conn->server.f4m_request);
@@ -664,7 +631,6 @@ static int handle_resp_f4m_nolist(proxy_conn_t *conn) {
 
 static int handle_resp_chunk(proxy_conn_t *conn) {
     estimate_throughput(conn, conn->server.request->content_length);
-//    conn->bitrate = select_bitrate(conn->bitrate_list, conn->T_curr);
     int ret_1 = 0, ret_2 = 0;
     ret_1 = send_data(conn->browser.fd, conn->server.response, strlen(conn->server.response));
     ret_2 = send_data(conn->browser.fd, conn->server.response_body, conn->server.request->content_length);
@@ -702,7 +668,7 @@ void clear_parsed_request(proxy_conn_t *conn, int is_browser) {
     }
 }
 
-ip_tpt_t* ip_tpt_find(const char *ip) {
+ip_tpt_t *ip_tpt_find(const char *ip) {
     ip_tpt_t *curr = ip_tpt_list;
     while (curr != NULL) {
         if (strstr(curr->ip, ip)) {
@@ -714,10 +680,8 @@ ip_tpt_t* ip_tpt_find(const char *ip) {
 }
 
 void ip_tpt_add(const char *ip, unsigned long tpt) {
-    printf("update tpt: %s-%d\n", ip, tpt);
     ip_tpt_t *target = ip_tpt_find(ip);
     if (!target) {
-        printf("not found\n");
         target = malloc(sizeof(ip_tpt_t));
         if (!target) {
             return;
