@@ -22,6 +22,7 @@ typedef struct proxy_conn {
     bitrate *bitrate_list; // parsed from f4m
     browser_t browser;
     server_t server;
+    char server_ip[MAX_PATH_LEN];
 
     struct proxy_conn *prev;
     struct proxy_conn *next;

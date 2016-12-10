@@ -316,9 +316,11 @@ static int proxy_connect_server(proxy_conn_t *conn) {
             free(addr_result);
             ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
         }
+        strcpy(conn->server_ip, inet_ntoa(((struct sockaddr_in *)(addr_result -> ai_addr)) -> sin_addr));
         // otherwise just return ret < 0
     } else {
         ret = connect(sock, (struct sockaddr *) (&server_addr), sizeof(struct sockaddr));
+        strcpy(conn->server_ip, inet_ntoa(server_addr.sin_addr));
     }
     if (ret < 0) {
 		puts("connection error!");
@@ -601,7 +603,7 @@ void estimate_throughput(proxy_conn_t *conn, unsigned long chunk_size) {
   replace_uri_bitrate(conn->server.chunk_name, conn->bitrate);
   //log_record(config.log, t_finish / 1000000, duration / 1000.0, T, Tcurrent, conn->bitrate,
   log_record(config.log, t_finish / 1000, diff, T, Tcurrent, conn->bitrate,
-             config.www_ip_str, conn->server.chunk_name);
+             conn->server_ip, conn->server.chunk_name);
 }
 
 /* Get timestamp in milliseconds. */
