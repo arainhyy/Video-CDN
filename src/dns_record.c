@@ -1,7 +1,4 @@
 #include "dns_record.h"
-//#include <stdint.h>
-//#include <inttypes.h>
-
 
 void dns_header_init(dns_header_t *header, int id) {
     memset(header, 0, sizeof(dns_header_t));

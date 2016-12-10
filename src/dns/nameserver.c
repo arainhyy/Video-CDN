@@ -45,7 +45,6 @@ static int nameserver_setup_listen() {
     struct sockaddr_in nameserver_addr;
     bzero(&nameserver_addr, sizeof(nameserver_addr));
     nameserver_addr.sin_family = AF_INET;
-    //inet_pton(AF_INET, config.ip, &(nameserver_addr.sin_addr));
     struct in_addr ns_inaddr;
     inet_aton(config.ip, &ns_inaddr);
     nameserver_addr.sin_addr = ns_inaddr;
@@ -55,11 +54,6 @@ static int nameserver_setup_listen() {
         perror("nameserver_setup_listen bind");
         return -1;
     }
-    // listen to port
-    //if (listen(sock, PROXY_MAX_LISTEN) < 0) {
-    //    perror("nameserver_setup_listen listen");
-    //    return -1;
-    //}
     return sock;
 }
 
@@ -75,9 +69,8 @@ int main(int argc, char *argv[]) {
     config.listen_port = atoi(argv[argv_offset + 3]);
     strcpy(config.server_file, argv[argv_offset + 4]);
     strcpy(config.lsa_file, argv[argv_offset + 5]);
-
-    start_logger("mylog.txt");
     log_init(config.log_file);
+    start_logger("mylog.txt");
     // run nameserver
     return nameserver_run();
 }
@@ -139,7 +132,6 @@ static int nameserver_run() {
         }
         // parse the request
         char qname[512] = {0};
-        //retval = dns_parse_request(request, size, qname);
 
         int retval2 = dns_parse_request(request, size, qname);
         unsigned short dns_id = DNS_GET_ID((dns_header_t *) (request));
@@ -149,7 +141,7 @@ static int nameserver_run() {
             // generate response and send
             char packet[DNS_MSG_MAX_LEN + 1] = {0};
             size = dns_gen_response(qname, NULL, dns_id, 1, packet);
-            // TODO
+
             size = sendto_wrap(sock, packet, size, 0, (struct sockaddr *) (&client_sock_addr), client_sock_len);
             if (size < 0) {
                 perror("sendto");
@@ -157,8 +149,7 @@ static int nameserver_run() {
             break;
         }
 
-        // TODO(hanlins): use server_ip to reply request from client.
-        //************************************************************
+        // Use server_ip to reply request from client.
         char *server_ip;
         char *client_ip = inet_ntoa(client_sock_addr.sin_addr); // Get this from deserialized packet.
 
@@ -177,7 +168,6 @@ static int nameserver_run() {
                 }
             }
         }
-        //************************************************************
         // construct udp packet to send
         char packet[DNS_MSG_MAX_LEN + 1] = {0};
         size = dns_gen_response(qname, server_ip, dns_id, 0, packet);
