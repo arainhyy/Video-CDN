@@ -50,6 +50,7 @@ static int nameserver_setup_listen() {
     inet_aton(config.ip, &ns_inaddr);
     nameserver_addr.sin_addr = ns_inaddr;
     nameserver_addr.sin_port = htons(config.listen_port);
+	printf("dns's addr: %s:%d\n", config.ip, config.listen_port);
     // bind to address
     if (bind(sock, (struct sockaddr *) (&nameserver_addr), sizeof(struct sockaddr_in)) < 0) {
         perror("nameserver_setup_listen bind");

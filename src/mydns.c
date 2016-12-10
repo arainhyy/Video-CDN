@@ -7,6 +7,7 @@ static int dns_id = 5, dns_sock = 0;
 static struct sockaddr_in dns_addr, proxy_addr;
 
 int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip) {
+	printf("dns ip: %s, port %d\n", dns_ip, dns_port);
 	memset(&dns_addr, 0, sizeof(dns_addr));
 	memset(&proxy_addr, 0, sizeof(proxy_addr));
     // bind to the assigned ip address : port
