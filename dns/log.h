@@ -12,6 +12,6 @@ FILE* log_fd;
 int start_logger(char* file_name);
 int close_logger();
 void logout(const char* format, ...);
-
+void log_init(const char *log_name);
 void log_record(const char *log_name, int time, const char *client_ip,
                 const char *query_name, const char *response_ip);

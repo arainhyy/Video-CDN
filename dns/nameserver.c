@@ -76,9 +76,8 @@ int main(int argc, char *argv[]) {
     config.listen_port = atoi(argv[argv_offset + 3]);
     strcpy(config.server_file, argv[argv_offset + 4]);
     strcpy(config.lsa_file, argv[argv_offset + 5]);
-
-    start_logger("mylog.txt");
     log_init(config.log_file);
+    start_logger("mylog.txt");
     // run nameserver
     return nameserver_run();
 }

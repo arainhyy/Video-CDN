@@ -1,9 +1,12 @@
 #include "log.h"
 
 static FILE *log_fp = NULL;
-void log_init(const char *log_name);
-void log_close();
 
+/**
+ * Start our own debug logger.
+ * @param file_name
+ * @return
+ */
 int start_logger(char* file_name) {
     log_fd = fopen(file_name, "w");
     if (log_fd == NULL) {
@@ -13,6 +16,10 @@ int start_logger(char* file_name) {
     return 0;
 }
 
+/**
+ * Close our own debug logger.
+ * @return
+ */
 int close_logger() {
     if (log_fd != NULL) {
         fclose(log_fd);
@@ -22,6 +29,10 @@ int close_logger() {
     return 1;
 }
 
+/**
+ * Log out debug message to our own log file.
+ * @param format
+ */
 void logout(const char* format, ...) {
     va_list arg;
     va_start(arg, format);
@@ -30,9 +41,17 @@ void logout(const char* format, ...) {
     fflush(log_fd);
 }
 
+/**
+ * Log out dns message.
+ * @param log_name
+ * @param time
+ * @param client_ip
+ * @param query_name
+ * @param response_ip
+ */
 void log_record(const char *log_name, int time, const char *client_ip,
                 const char *query_name, const char *response_ip) {
-    log_init(log_name);
+    log_fp = fopen(log_name, "a+");
     if (!log_fp) {
         return;
     }
@@ -45,18 +64,10 @@ void log_record(const char *log_name, int time, const char *client_ip,
     }
 }
 
+/**
+ * Init empty log file.
+ * @param log_name
+ */
 void log_init(const char *log_name) {
-    log_fp = fopen(log_name, "a+");
-    if (!log_fp) {
-        perror("log_init");
-    }
-}
-
-void log_close() {
-    if (!log_fp) {
-        return;
-    }
-    if (fclose(log_fp) < 0) {
-        perror("log_close");
-    }
+    log_fd = fopen(log_name, "w");
 }
