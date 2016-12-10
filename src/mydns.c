@@ -15,8 +15,10 @@ int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip) {
 	memset(&dns_ip_addr, 0, sizeof(dns_ip_addr));
     inet_aton(dns_ip, &dns_ip_addr);
     dns_addr.sin_family = AF_INET;
+    printf("-----dns port during init: %d\n", dns_port);
     dns_addr.sin_port = htons(dns_port);
     dns_addr.sin_addr = dns_ip_addr;
+//    printf("-----DNS address during init: %s\n", dns_addr.sin_addr.s_addr);
 	// set proxy addr for binding
     struct in_addr proxy_ip_addr;
 	memset(&proxy_ip_addr, 0, sizeof(proxy_ip_addr));
@@ -29,18 +31,18 @@ int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip) {
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
         perror("init_mydns socket");
-        return sock;
+        return -1;
     }
     // bind to address
     int ret = bind(sock, (struct sockaddr *) (&proxy_addr), sizeof(struct sockaddr_in));
     if (ret < 0) {
         close(sock);
         perror("init_mydns bind");
-        return ret;
+        return -1;
     }
     dns_sock = sock;
 	printf("dns socket: %d\n", dns_sock);
-    return sock;
+    return 0;
 }
 
 int resolve(const char *node, const char *service,
@@ -60,14 +62,18 @@ int resolve(const char *node, const char *service,
     char packet[DNS_MSG_MAX_LEN] = {0};
     int size = dns_generate_request(node, dns_id, packet);
 	printf("generate dns request result: %d\n", size);
+//    printf("-----DNS address during send: %s\n", dns_addr.sin_addr.s_addr);
     int ret = sendto(dns_sock, packet, size, 0, (struct sockaddr*) (&dns_addr), sizeof(dns_addr));
+    puts("send successfully\n");
     if (ret < 0) {
         perror("resolve sendto");
         return -1;
     }
 	memset(packet, 0, sizeof(packet));
-    socklen_t len = sizeof(dns_addr);
-    size = recvfrom(dns_sock, packet, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&dns_addr), (socklen_t *) (&len));
+    puts("try to recv\n");
+    struct sockaddr_in from;
+    int len = sizeof(from);
+    size = recvfrom(dns_sock, packet, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&from), (socklen_t *) (&len));
 	printf("recv size: %d\n", size);
     if (size < 0) {
         perror("resolve recvfrom");
