@@ -1,0 +1,52 @@
+src
+├── Makefile					makefile for the project
+├── bitrate.c					source for bitrate control
+├── bitrate.h					header for bitrate control
+├── common.h					commonly shared header
+├── dns
+│   ├── Makefile				makefile for nameserver
+│   ├── load_balance.c				source for load balance
+│   ├── load_balance.h				header for load balance
+│   ├── log.c					header for dns logging
+│   ├── log.h					source for dns logging
+│   ├── nameserver.c				source for nameserver main
+│   ├── nameserver.h				header for nameserver
+│   ├── parse.c					source for dns file parsing
+│   ├── parse.h					header for dns file parsing
+│   └── unit_test				unit tests for dns submodules
+│       ├── Makefile
+│       ├── load_balance
+│       │   ├── Makefile
+│       │   └── test_load_balance.c
+│       └── parse
+│           ├── Makefile
+│           └── test_parse.c
+├── dns_record.c				source for dns helpers
+├── dns_record.h				header for dns helpers
+├── helper.c					source for proxy helpers
+├── helper.h					header for proxy helpers
+├── lexer.l					lex parser
+├── log.c					source for proxy logging
+├── log.h					header for proxy logging
+├── mydns.c					source for dns resolving
+├── mydns.h					header for dns resolving
+├── parse.c					source for proxy file parser
+├── parse.h					header for proxy file parser
+├── parser.y					yacc for proxy file parser
+├── proxy2.c					source for proxy functions
+├── proxy2.h					header for proxy functions
+├── proxy_main.c				main function for proxy
+└── unit_test					unit tests for proxy submodules
+    ├── Makefile
+    ├── bitrate
+    │   ├── Makefile
+    │   └── test_bitrate.c
+    ├── dns_record
+    │   ├── Makefile
+    │   ├── test
+    │   ├── test_dns.c
+    │   └── test_dns.o
+    └── helper
+        ├── Makefile
+        └── test_helper.c
+

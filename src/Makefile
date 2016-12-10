@@ -12,7 +12,7 @@ LIB=-I/usr/local/include -L/usr/lib/x86_64-linux-gnu
 
 default:all
 
-all: proxy
+all: proxy ns
 
 lex.yy.c: lexer.l
 	flex $^
@@ -25,7 +25,10 @@ y.tab.c: parser.y
 
 proxy: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
-#	$(CC) -o $@ $^ $(CFLAGS) $(LIB)
+
+ns:
+	cd dns && make && cp dns ../nameserver && cd ..
 
 clean:
-	rm -f *~ *.o proxy lex.yy.c y.tab.c y.tab.h log
+	- rm -f *~ *.o proxy lex.yy.c y.tab.c y.tab.h log
+	- cd dns && make clean && cd ..

@@ -3,7 +3,7 @@
 //
 #include <time.h>
 #include "nameserver.h"
-#include "../src/dns_record.h"
+#include "../dns_record.h"
 
 extern node *clients;
 extern int client_num;

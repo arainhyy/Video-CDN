@@ -1,13 +1,9 @@
-all: proxy ns
+all: proxy
 
 proxy:
-	cd src && make && mv proxy .. && cd ..
-
-ns:
-	cd dns && make && mv dns ../nameserver && cd ..
+	cd src && make && mv proxy .. && mv nameserver .. && cd ..
 
 clean:
 	- cd src && make clean && cd ..
-	- cd dns && make clean && cd ..
 	- rm proxy
 	- rm nameserver
