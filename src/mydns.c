@@ -74,11 +74,14 @@ int resolve(const char *node, const char *service,
         return -1;
     }
 	// modifided here, malloc and freed by user
+	/*
 	struct in_addr result_addr;
 	dns_parse_response(packet, size, &result_addr);
 	struct sockaddr_in* result_addr_pt = malloc(sizeof(struct sockaddr_in));
 	result_addr_pt->sin_addr = result_addr;
 	*res = malloc(sizeof(struct addrinfo));
 	(*res)->ai_addr = (struct sockaddr *) result_addr_pt;
+	*/
+	dns_parse_response(packet, size, res);
     return 0;
 }

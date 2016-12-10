@@ -116,23 +116,39 @@ int parse_question(const char *buf, int size, char *result) {
 
 // parse a single answer item
 int parse_resource(const char *buf, int size, struct addrinfo **result) {
+	puts("parse resource");
+	printf("pt: %p\n", buf);
     int offset = 0;
     // ignore question name
-    offset += parse_name(buf + offset, size - offset, NULL);
+	char qname[512] = {0};
+    offset += parse_name(buf, size, qname);
+	offset++;
+	printf("offset: %d\n", offset);
     dns_resource_t *resource = buf + offset;
     // check QTYPE and QCLASS
-    if (DNS_GET_TYPE(resource) != DNS_TYPE_A) {
-        return -1;
-    }
-    if (DNS_GET_CLASS(resource) != DNS_CLASS_IP) {
-        return -1;
-    }
+    //if (DNS_GET_TYPE(resource) != DNS_TYPE_A) {
+    //    return -1;
+    //}
+    //if (DNS_GET_CLASS(resource) != DNS_CLASS_IP) {
+    //    return -1;
+    //}
     int rdlen = DNS_GET_RDLEN(resource);
+	printf("rdlen: %d\n", rdlen);
     if (rdlen != sizeof(struct in_addr)) {
         return -1;
     }
     offset += sizeof(dns_resource_t);
-    ((struct sockaddr_in*)(*result)->ai_addr)->sin_addr.s_addr = ntohs(buf + offset);
+	offset -= 2;
+	printf("offset: %d\n", offset);
+    //((struct sockaddr_in*)(*result)->ai_addr)->sin_addr.s_addr = ntohs(buf + offset);
+	struct in_addr result_addr;
+	memcpy(&(result_addr.s_addr), buf + offset, 4);
+	(*result) = malloc(sizeof(struct addrinfo));
+
+	struct sockaddr_in* result_addr_pt = malloc(sizeof(struct sockaddr_in));
+	result_addr_pt->sin_addr = result_addr;
+	(*result)->ai_addr = (struct sockaddr *) result_addr_pt;
+
 //    result->s_addr = ntohs(buf + offset);
     return offset;
 }
@@ -162,7 +178,7 @@ int generate_resource(const char *query, const char *ip, char *result) {
     dns_resource_t resource;
     resource.type = htons(DNS_TYPE_A);
     resource.class_name = htons(DNS_CLASS_IP);
-    resource.ttl = htons(0);
+    resource.ttl = htonl(0);
     resource.rdlength = htons(sizeof(struct in_addr));
     memcpy(result + offset, &resource, sizeof(dns_resource_t));
     offset += sizeof(dns_resource_t);
@@ -172,7 +188,7 @@ int generate_resource(const char *query, const char *ip, char *result) {
     memcpy(result + offset - 2, &ip_addr_temp.s_addr, 4);
     offset += sizeof(struct in_addr);
 	printf("offset: %d\n", offset);
-    return offset;
+    return offset - 2;
 }
 
 int dns_isinvalid(dns_header_t *header, int is_request) {
@@ -202,22 +218,22 @@ int dns_isinvalid(dns_header_t *header, int is_request) {
         if (DNS_CHECK_FLAG(header, DNS_FLAG_QR) == 0) {
 			puts("QR error");
 			printf("QR: %d\n", DNS_CHECK_FLAG(header, DNS_FLAG_QR));
-            //return -1;
+            return -1;
         }
         if (DNS_CHECK_FLAG(header, DNS_FLAG_AA) == 0) {
 			puts("AA error");
-            //return -1;
+            return -1;
         }
         // make sure that no question and only one answer
         if (DNS_GET_QDCOUNT(header) < 0) {
 			puts("QD error");
 			printf("QD: %d\n", DNS_GET_QDCOUNT(header));
-            //return -1;
+            return -1;
         }
         if (DNS_GET_ANCOUNT(header) != 1) {
 			puts("AN error");
 			printf("AN: %d\n", DNS_GET_ANCOUNT(header));
-            //return -1;
+            return -1;
         }
     }
     // check RD, RA, Z
@@ -315,33 +331,48 @@ int dns_parse_response(const char *response, int size, struct addrinfo **result)
     }
     if (DNS_CHECK_FLAG(header, DNS_FLAG_RCODE) != 0) {
         // server returned error status
+		puts("parse response flag error");
         return -2;
     }
     // get number of questions
     int qnum = DNS_GET_QDCOUNT(header), offset = 0 + sizeof(dns_header_t), ret = 0;
     if (DNS_GET_ANCOUNT(header) != 1) {
+		puts("parse response qd error");
         return -1;
     }
-    while (qnum > 0) {
-        ret = parse_question(response + offset, size - offset, NULL);
-        if (ret < 0) {
-            break;
-        }
-        size -= ret;
-        qnum--;
-    }
+	puts("parse question");
+	char qname[512] = {0};
+	puts(qname);
+	printf("offset: %d\n", offset);
+	ret = parse_question(response + offset, size - offset, qname);
+	if (ret < 0) {
+		puts("parse question error");
+		return -1;
+	}
+	//size -= ret;
+	printf("ret: %d\n", ret);
+	offset += ret;
+	offset++;
     if (ret < 0) {
         return -1;
     }
     // get the ip address in question section
-    ret = parse_name(response + offset, size - offset, NULL);
-    if (ret < 0) {
-        return -1;
-    }
-    offset += ret;
+	//puts("parse name 2");
+	//printf("offset: %d\n", offset);
+    //ret = parse_name(response + offset, size - offset, qname);
+    //if (ret < 0) {
+    //    return -1;
+    //}
+    //offset += ret;
+	//offset++;
+	printf("qname: %s\n", qname);
     // then check the answer
+	printf("offset: %d\n", offset);
+	printf("size - offset: %d\n", size - offset);
+	puts(response + offset);
+	printf("pt: %p\n", response + offset);
     ret = parse_resource(response + offset, size - offset, result);
-    return ret;
+    return ret + offset;
 }
 
 // generate request
