@@ -7,6 +7,7 @@ static int dns_id = 5, dns_sock = 0;
 static struct sockaddr_in dns_addr, proxy_addr;
 
 int init_mydns(const char *dns_ip, unsigned int dns_port, const char *my_ip) {
+	printf("dns ip: %s, port %d\n", dns_ip, dns_port);
 	memset(&dns_addr, 0, sizeof(dns_addr));
 	memset(&proxy_addr, 0, sizeof(proxy_addr));
     // bind to the assigned ip address : port
@@ -65,7 +66,7 @@ int resolve(const char *node, const char *service,
         return -1;
     }
 	memset(packet, 0, sizeof(packet));
-    int len = sizeof(dns_addr);
+    socklen_t len = sizeof(dns_addr);
     size = recvfrom(dns_sock, packet, DNS_MSG_MAX_LEN, 0, (struct sockaddr *) (&dns_addr), (socklen_t *) (&len));
 	printf("recv size: %d\n", size);
     if (size < 0) {
