@@ -386,7 +386,7 @@ static int handler_browser(proxy_conn_t *conn) {
     // check request type
     conn->browser.type = check_type(conn->browser.request);
     // connect to server
-    if (proxy_connect_server(conn) < 0) {
+    if (conn->server.fd < 0) {
 		puts("conn server fail");
         return -1;
     }
@@ -534,6 +534,7 @@ void proxy_insert_conn(proxy_conn_t *conn) {
     if (!conn) {
         return;
     }
+    proxy_connect_server(conn);
     proxy_conn_t *temp = config.list_conn;
     config.list_conn = conn;
     conn->next = temp;
