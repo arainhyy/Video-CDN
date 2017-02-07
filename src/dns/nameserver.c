@@ -162,7 +162,7 @@ static int nameserver_run() {
         } else {
             int i;
             for (i = 0; i < total_num; i++) {
-                if (strcmp(routing_table[i].client_ip, client_ip)) {
+                if (!strcmp(routing_table[i].client_ip, client_ip)) {
                     server_ip = routing_table[i].server_ip;
                     break;
                 }
